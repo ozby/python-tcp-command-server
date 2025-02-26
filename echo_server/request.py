@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from re import compile
+
+from echo_server.validation import Validator
+
 
 @dataclass
 class Command:
@@ -9,18 +11,8 @@ class Command:
 
 
 class RequestParser:
-    REQUEST_ID_PATTERN = compile(r"^[a-z]{7}$")
-    CLIENT_ID_PATTERN = compile(r"^[a-zA-Z0-9]+$")
     COMMANDS_WITH_CLIENT_ID = ["SIGN_IN"]
     VALID_COMMANDS = ["SIGN_IN", "SIGN_OUT", "WHOAMI"]
-
-    @classmethod
-    def validate_request_id(cls, request_id: str) -> bool:
-        return bool(cls.REQUEST_ID_PATTERN.match(request_id))
-
-    @classmethod
-    def validate_client_id(cls, client_id: str) -> bool:
-        return bool(cls.CLIENT_ID_PATTERN.match(client_id))
 
     @classmethod
     def parse(cls, line: str) -> Command:
@@ -30,7 +22,7 @@ class RequestParser:
             raise ValueError("Invalid format. Expected: request_id|action[|clientId]")
 
         request_id = parts[0]
-        if not cls.validate_request_id(request_id):
+        if not Validator.validate_request_id(request_id):
             raise ValueError("Invalid request_id. Must be 7 lowercase letters (a-z)")
 
         action = parts[1]
@@ -43,7 +35,7 @@ class RequestParser:
             raise ValueError("client_id only allowed with SIGN_IN command")
         if action in cls.COMMANDS_WITH_CLIENT_ID and client_id is None:
             raise ValueError(f"{action} command requires client_id")
-        if client_id is not None and not cls.validate_client_id(client_id):
+        if client_id is not None and not Validator.validate_client_id(client_id):
             raise ValueError("client_id must be alphanumeric")
 
         return Command(

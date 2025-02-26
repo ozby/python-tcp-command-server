@@ -57,21 +57,6 @@ class TestParserInput(unittest.TestCase):
         with self.assertRaises(ValueError):
             RequestParser.parse("abcdefg|SIGN_IN|")  # empty client_id
 
-    def test_validation_methods(self) -> None:
-        # Test request_id validation
-        self.assertTrue(RequestParser.validate_request_id("abcdefg"))
-        self.assertFalse(RequestParser.validate_request_id("abc"))  # too short
-        self.assertFalse(RequestParser.validate_request_id("abcdefgh"))  # too long
-        self.assertFalse(RequestParser.validate_request_id("ABCDEFG"))  # uppercase not allowed
-        self.assertFalse(RequestParser.validate_request_id("abc123"))  # numbers not allowed
-
-        # Test client_id validation
-        self.assertTrue(RequestParser.validate_client_id("janedoe"))
-        self.assertTrue(RequestParser.validate_client_id("jane123"))
-        self.assertTrue(RequestParser.validate_client_id("JANE123"))
-        self.assertFalse(RequestParser.validate_client_id("jane@doe"))  # special chars not allowed
-        self.assertFalse(RequestParser.validate_client_id("jane doe"))  # spaces not allowed
-
 
 if __name__ == "__main__":
     unittest.main()
