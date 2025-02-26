@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "echo_server"
+name = "server"
 version = "0.1.0"
 description = "A TCP echo server implementation"
 requires-python = ">=3.11"
@@ -26,6 +26,7 @@ target-version = ["py311"]
 line-length = 88
 target-version = "py311"
 select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
+ignore = ["PLR2004", "E501"]
 
 [tool.mypy]
 python_version = "3.11"

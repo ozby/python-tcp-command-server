@@ -26,7 +26,7 @@ pip install -e ".[dev]"
 
 Run the server:
 ```bash
-python -m echo_server
+python -m server
 ```
 
 The server will start listening on port 8989 by default. You can test it using netcat:
@@ -50,7 +50,7 @@ The project uses several tools to ensure code quality:
 
 - Black for code formatting:
 ```bash
-black echo_server tests
+black server tests
 ```
 
 - Ruff for linting:
@@ -60,7 +60,7 @@ ruff check .
 
 - Mypy for type checking:
 ```bash
-mypy echo_server tests
+mypy server tests
 ```
 
 ## License
