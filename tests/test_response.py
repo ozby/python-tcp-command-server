@@ -1,44 +1,33 @@
 import unittest
 
-from echo_server.response import Response, ResponseGenerator
+from echo_server.response import Response
 
 
-class TestResponseGenerator(unittest.TestCase):
+class TestResponse(unittest.TestCase):
     def test_serialize_response(self) -> None:
-        # Test response with only request_id
-        result = ResponseGenerator.serialize(
-            Response(request_id="abcdefg")
-        )
-        self.assertEqual(result, "abcdefg")
+        result = Response(request_id="abcdefg").serialize()
+        self.assertEqual(result, "abcdefg\n")
 
-        # Test response with request_id and client_id
-        result = ResponseGenerator.serialize(
-            Response(request_id="abcdefg", client_id="janedoe")
-        )
-        self.assertEqual(result, "abcdefg|janedoe")
+        result = Response(request_id="abcdefg", client_id="janedoe").serialize()
+        self.assertEqual(result, "abcdefg|janedoe\n")
 
     def test_serialize_failures(self) -> None:
         # Test invalid request_id
         with self.assertRaises(ValueError):
-            ResponseGenerator.serialize(Response(request_id="abc"))  # too short
+            Response(request_id="abc").serialize()
 
         with self.assertRaises(ValueError):
-            ResponseGenerator.serialize(Response(request_id="abc123d"))  # contains numbers
+            Response(request_id="abc123d").serialize()
 
         with self.assertRaises(ValueError):
-            ResponseGenerator.serialize(Response(request_id="ABCDEFG"))  # uppercase
-
-        # Test invalid client_id
-        with self.assertRaises(ValueError):
-            ResponseGenerator.serialize(
-                Response(request_id="abcdefg", client_id="invalid@id")
-            )  # special chars
+            Response(request_id="ABCDEFG").serialize()
 
         with self.assertRaises(ValueError):
-            ResponseGenerator.serialize(
-                Response(request_id="abcdefg", client_id="invalid id")
-            )  # spaces
+            Response(request_id="abcdefg", client_id="invalid@id").serialize()
+
+        with self.assertRaises(ValueError):
+            Response(request_id="abcdefg", client_id="invalid id").serialize()
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main(verbosity=2) 

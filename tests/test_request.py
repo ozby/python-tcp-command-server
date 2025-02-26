@@ -1,62 +1,56 @@
 import unittest
 
-from echo_server.request import Command, RequestParser
-
-
+from echo_server.request import Request
 class TestParserInput(unittest.TestCase):
     def test_parse_commands(self) -> None:
         # Test SIGN_IN command
-        result = RequestParser.parse("ougmcim|SIGN_IN|janedoe")
         self.assertEqual(
-            result,
-            Command(request_id="ougmcim", action="SIGN_IN", client_id="janedoe"),
+            vars(Request.fromLine("ougmcim|SIGN_IN|janedoe")),
+            vars(Request(request_id="ougmcim", action="SIGN_IN", client_id="janedoe")),
         )
 
-        # Test WHOAMI command
-        result = RequestParser.parse("iwhygsi|WHOAMI")
         self.assertEqual(
-            result, Command(request_id="iwhygsi", action="WHOAMI", client_id=None)
+            vars(Request.fromLine("iwhygsi|WHOAMI")),
+            vars(Request(request_id="iwhygsi", action="WHOAMI"))
         )
 
-        # Test SIGN_OUT command
-        result = RequestParser.parse("cadlsdo|SIGN_OUT")
         self.assertEqual(
-            result,
-            Command(request_id="cadlsdo", action="SIGN_OUT", client_id=None),
+            vars(Request.fromLine("cadlsdo|SIGN_OUT")),
+            vars(Request(request_id="cadlsdo", action="SIGN_OUT")),
         )
 
     def test_parse_failures(self) -> None:
         with self.assertRaises(ValueError):
-            RequestParser.parse("abc|SIGN_IN|janedoe")
+            Request.fromLine("abc|SIGN_IN|janedoe")
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abc123d|SIGN_IN|janedoe")
+            Request.fromLine("abc123d|SIGN_IN|janedoe")
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg")
+            Request.fromLine("abcdefg")
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg|INVALID|janedoe")
+            Request.fromLine("abcdefg|INVALID|janedoe")
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg|WHOAMI|janedoe")
+            Request.fromLine("abcdefg|WHOAMI|janedoe")
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg|SIGN_OUT|janedoe")
+            Request.fromLine("abcdefg|SIGN_OUT|janedoe")
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg|SIGN_IN")
+            Request.fromLine("abcdefg|SIGN_IN")
 
         # New error cases for client_id validation
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg|SIGN_IN|invalid@id")  # non-alphanumeric client_id
+            Request.fromLine("abcdefg|SIGN_IN|invalid@id")  # non-alphanumeric client_id
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg|SIGN_IN|invalid id")  # space in client_id
+            Request.fromLine("abcdefg|SIGN_IN|invalid id")  # space in client_id
 
         with self.assertRaises(ValueError):
-            RequestParser.parse("abcdefg|SIGN_IN|")  # empty client_id
+            Request.fromLine("abcdefg|SIGN_IN|")  # empty client_id
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
