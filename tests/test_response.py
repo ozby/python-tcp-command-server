@@ -8,11 +8,10 @@ class TestResponse(unittest.TestCase):
         result = Response(request_id="abcdefg").serialize()
         self.assertEqual(result, "abcdefg\n")
 
-        result = Response(request_id="abcdefg", client_id="janedoe").serialize()
+        result = Response(request_id="abcdefg", params=["janedoe"]).serialize()
         self.assertEqual(result, "abcdefg|janedoe\n")
 
     def test_serialize_failures(self) -> None:
-        # Test invalid request_id
         with self.assertRaises(ValueError):
             Response(request_id="abc").serialize()
 
@@ -22,12 +21,6 @@ class TestResponse(unittest.TestCase):
         with self.assertRaises(ValueError):
             Response(request_id="ABCDEFG").serialize()
 
-        with self.assertRaises(ValueError):
-            Response(request_id="abcdefg", client_id="invalid@id").serialize()
-
-        with self.assertRaises(ValueError):
-            Response(request_id="abcdefg", client_id="invalid id").serialize()
-
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

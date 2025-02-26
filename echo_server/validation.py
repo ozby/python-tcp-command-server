@@ -11,4 +11,4 @@ class Validator:
 
     @classmethod
     def validate_client_id(cls, client_id: str) -> bool:
-        return bool(cls.CLIENT_ID_PATTERN.match(client_id)) 
+        return bool(cls.CLIENT_ID_PATTERN.match(client_id))

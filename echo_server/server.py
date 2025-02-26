@@ -7,7 +7,6 @@ from typing import NoReturn
 from echo_server.request import Request
 from echo_server.response import Response
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -18,11 +17,13 @@ class EchoServer:
         self._server: asyncio.AbstractServer | None = None
         self.sessions = {}
 
-
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         peer = writer.get_extra_info("peername")
+        peer_str = f"{peer[0]}:{peer[1]}"
+        logger.info("Peer str: %s", peer_str)
+
         logger.info("New connection from %s", peer)
         logger.info("Sessions: %s", self.sessions)
 
@@ -33,27 +34,32 @@ class EchoServer:
                     break
 
                 logger.info("Received %r from %s", data.decode(), peer)
-                parsed_command = Request(data.decode())
-                peer_str = f"{peer[0]}:{peer[1]}"
-                logger.info("Peer str: %s", peer_str)
+                parsed_command = Request.from_line(data.decode())
+                logger.info("parsed_command: %s", parsed_command)
 
                 if parsed_command.action == "SIGN_IN":
-                    self.sessions[peer_str] = parsed_command.client_id
-                    responseData = Response(request_id=parsed_command.request_id)
-                    response = responseData.serialize(responseData)
+                    self.sessions[peer_str] = parsed_command.params[0]
+                    response = Response(
+                        request_id=parsed_command.request_id
+                    ).serialize()
                     logger.info("response: %s", response)
 
                     writer.write(response.encode())
                 if parsed_command.action == "SIGN_OUT":
-                    self.sessions[peer_str] = parsed_command.client_id
                     if peer_str in self.sessions:
                         del self.sessions[peer_str]
-                    responseData = Response(request_id=parsed_command.request_id)
-                    response = responseData.serialize(responseData)
+                    response = Response(
+                        request_id=parsed_command.request_id
+                    ).serialize()
                     writer.write(response.encode())
                 elif parsed_command.action == "WHOAMI":
-                    responseData = Response(request_id=parsed_command.request_id, client_id=self.sessions[peer_str] if peer_str in self.sessions else None)
-                    response = responseData.serialize(responseData)
+                    params = (
+                        [self.sessions[peer_str]] if peer_str in self.sessions else []
+                    )
+                    response_data = Response(
+                        request_id=parsed_command.request_id, params=params
+                    )
+                    response = response_data.serialize()
                     writer.write(response.encode())
                 # logger.info("Responding %r to %s", response, peer)
                 await writer.drain()
