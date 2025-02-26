@@ -4,6 +4,9 @@ import asyncio
 import logging
 from typing import NoReturn
 
+from echo_server.request import RequestParser
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +29,8 @@ class EchoServer:
                     break
 
                 logger.debug("Received %r from %s", data, peer)
-                writer.write(data)
+                parsed_command = RequestParser.parse(data.decode())
+                writer.write(f"{parsed_command.request_id}|{parsed_command.action}\n".encode())
                 await writer.drain()
 
         except Exception as e:
