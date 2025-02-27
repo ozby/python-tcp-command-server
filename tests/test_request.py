@@ -1,10 +1,13 @@
 import unittest
 
 from server.request import Request
+from server.services.session_service import SessionService
+from tests.test_discussions import TEST_PEER_ID
 
 
 class TestParserInput(unittest.TestCase):
     def test_parse_actions(self) -> None:
+        SessionService().set(TEST_PEER_ID, "tester_client_1")
         # Test SIGN_IN action
         self.assertEqual(
             vars(Request.from_line("ougmcim|SIGN_IN|janedoe")),
@@ -29,7 +32,8 @@ class TestParserInput(unittest.TestCase):
         self.assertEqual(
             vars(
                 Request.from_line(
-                    'ykkngzx|CREATE_DISCUSSION|iofetzv.0s|Hey, folks. What do you think of my video? Does it have enough "polish"?'
+                    'ykkngzx|CREATE_DISCUSSION|iofetzv.0s|Hey, folks. What do you think of my video? Does it have enough "polish"?',
+                    TEST_PEER_ID
                 )
             ),
             vars(
@@ -40,17 +44,19 @@ class TestParserInput(unittest.TestCase):
                         "iofetzv.0s",
                         'Hey, folks. What do you think of my video? Does it have enough "polish"?',
                     ],
+                    peer_id=TEST_PEER_ID
                 )
             ),
         )
 
         self.assertEqual(
-            vars(Request.from_line("sqahhfj|CREATE_REPLY|iztybsd|I think it's great!")),
+            vars(Request.from_line("sqahhfj|CREATE_REPLY|iztybsd|I think it's great!", TEST_PEER_ID)),
             vars(
                 Request(
                     request_id="sqahhfj",
                     action="CREATE_REPLY",
                     params=["iztybsd", "I think it's great!"],
+                    peer_id=TEST_PEER_ID
                 )
             ),
         )

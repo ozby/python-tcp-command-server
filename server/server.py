@@ -19,10 +19,9 @@ class Server:
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        peer = writer.get_extra_info("peername")
-        peer_str = f"{peer[0]}:{peer[1]}"
-        logger.info("Peer str: %s", peer_str)
-        logger.info("New connection from %s", peer)
+        peerInfo = writer.get_extra_info("peername")
+        peer_str = f"{peerInfo[0]}:{peerInfo[1]}"
+        logger.info("New connection from %s", peer_str)
 
         try:
             while True:
@@ -30,14 +29,15 @@ class Server:
                 if not data:
                     break
 
-                logger.info("Received %r from %s", data.decode(), peer)
-                parsed_command = Request.from_line(data.decode())
+                logger.info("Received %r from %s", data.decode(), peer_str)
+                parsed_command = Request.from_line(data.decode(), peer_str)
                 logger.info("parsed_command: %s", parsed_command)
 
                 action_man = ActionFactory.execute_action(
                     parsed_command.action,
                     parsed_command.request_id,
                     parsed_command.params,
+                    peer_str
                 )
                 response_from_action = action_man.execute()
                 logger.info("response: %s", response_from_action)
@@ -46,12 +46,13 @@ class Server:
                 await writer.drain()
 
         except Exception as e:
-            logger.error("Error handling client %s: %s", peer, e)
+            writer.write(str(e).encode())
+            logger.error("Error handling client %s: %s", peer_str, e)
         finally:
             writer.close()
-            SessionService().delete()
+            SessionService().delete(peer_str)
             await writer.wait_closed()
-            logger.info("Connection closed from %s", peer)
+            logger.info("Connection closed from %s", peer_str)
 
     async def start(self) -> None:
         self._server = await asyncio.start_server(

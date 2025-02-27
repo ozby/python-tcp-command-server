@@ -3,11 +3,16 @@ import logging
 from server.actions.action import Action
 from server.response import Response
 from server.services.discussion_service import DiscussionService
+from server.services.session_service import SessionService
 from server.validation import Validator
 
 
 class CreateDiscussionAction(Action):
     def validate(self) -> None:
+        client_id = SessionService().get_client_id(self.peer_id)
+        if (client_id is None):
+            raise ValueError("authentication is required")
+        
         logging.info(f"params: {self.params}")
         if len(self.params) != 2:
             raise ValueError("action requires two parameters")
@@ -19,12 +24,16 @@ class CreateDiscussionAction(Action):
 
     def execute(self) -> str:
         discussion_service = DiscussionService()
-        discussion_id = discussion_service.create_discussion(self.params[0], self.params[1])
+        discussion_id = discussion_service.create_discussion(self.params[0], self.params[1], SessionService().get_client_id(self.peer_id))
         return Response(request_id=self.request_id, params=[discussion_id]).serialize()
 
 
 class CreateReplyAction(Action):
     def validate(self) -> None:
+        client_id = SessionService().get_client_id(self.peer_id)
+        if (client_id is None):
+            raise ValueError("authentication is required")
+        
         if len(self.params) != 2:
             raise ValueError("action requires two parameters")
 
@@ -37,7 +46,7 @@ class CreateReplyAction(Action):
     def execute(self) -> str:
         discussion_id, comment = self.params[0], self.params[1]
         discussion_service = DiscussionService()
-        discussion_service.create_reply(discussion_id, comment)
+        discussion_service.create_reply(discussion_id, comment, SessionService().get_client_id(self.peer_id))
         return Response(request_id=self.request_id).serialize()
 
 
@@ -60,7 +69,7 @@ class GetDiscussionAction(Action):
         for reply in discussion.replies:
             replies.append(f"{reply.author}|{reply.comment}")
         params = [
-            discussion.discussion_id, discussion.author, discussion.reference,
+            discussion.discussion_id, discussion.reference,
             "(" + ",".join(replies) + ")"]
         return Response(request_id=self.request_id, params=params).serialize()
 

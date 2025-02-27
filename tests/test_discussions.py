@@ -4,20 +4,24 @@ from unittest.mock import MagicMock, patch
 
 from server.actions.discussions import CreateDiscussionAction, CreateReplyAction, GetDiscussionAction, ListDiscussionAction
 from server.services.discussion_service import DiscussionService
+from server.services.session_service import SessionService
 from server.validation import Validator
 
+TEST_PEER_ID = "127.0.0.1:89899"
+
 def test_create_discussion_validates_params():
-    action = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"])
+    SessionService().set(TEST_PEER_ID, "tester_client_1")
+    action = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     action.validate() # Should not raise
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionAction("abcdefg", []).validate()
+        CreateDiscussionAction("abcdefg", [], TEST_PEER_ID).validate()
         
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionAction("abcdefg", ["ref.123"]).validate()
+        CreateDiscussionAction("abcdefg", ["ref.123"], TEST_PEER_ID).validate()
         
     with pytest.raises(ValueError, match="reference must be period-delimited alphanumeric"):
-        CreateDiscussionAction("abcdefg", ["invalid!", "test"]).validate()
+        CreateDiscussionAction("abcdefg", ["invalid!", "test"], TEST_PEER_ID).validate()
 
 def test_create_discussion_executes():
     discussion_id = "abcdzzz"
@@ -25,7 +29,7 @@ def test_create_discussion_executes():
         mock_service = mock_service_class.return_value
         mock_service.create_discussion.return_value = discussion_id
     
-        action = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"]) 
+        action = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID) 
         action.discussion_service = mock_service
         
         result = action.execute().rstrip("\n")
@@ -35,7 +39,7 @@ def test_create_discussion_executes():
         assert parts[1] == discussion_id
         assert Validator.validate_request_id(parts[1])
         
-        mock_service.create_discussion.assert_called_once_with("ref.123", "test comment")
+        mock_service.create_discussion.assert_called_once_with("ref.123", "test comment", SessionService().get_client_id(TEST_PEER_ID))
 
 # def test_create_reply_executes():
     # reply = CreateReplyAction("abcdefg", ["discidi", "test comment"])
@@ -49,24 +53,24 @@ def test_create_discussion_executes():
     # print(f"returned: {returned}")
 
 def test_get_discussion_executes():
-    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"])
+    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     created_discussion_id = created.execute().strip("\n").split("|")[1]
     print(f"created_discussion_id: {created_discussion_id}")
 
-    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id])
+    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id], TEST_PEER_ID)
     returned = returned_discussion.execute()
-    assert returned == f"abcdefg|{created_discussion_id}|author|ref.123|(author|test comment)\n"
+    assert returned == f"abcdefg|{created_discussion_id}|ref.123|({SessionService().get_client_id(TEST_PEER_ID)}|test comment)\n"
 
 
 def test_create_reply_validates_params():
-    action = CreateReplyAction("abcdefg", ["disc123", "test reply"])
+    action = CreateReplyAction("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
     action.validate() # Should not raise
     
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyAction("abcdefg", []).validate()
+        CreateReplyAction("abcdefg", [], TEST_PEER_ID).validate()
         
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyAction("abcdefg", ["disc123"]).validate()
+        CreateReplyAction("abcdefg", ["disc123"], TEST_PEER_ID).validate()
 
 def test_get_discussion_validates_params():
     action = GetDiscussionAction("abcdefg", ["disc123"])

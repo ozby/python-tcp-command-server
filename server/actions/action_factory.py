@@ -18,26 +18,20 @@ class ActionFactory:
         action: str,
         request_id: str,
         params: list[str],
+        peer_id: str | None = None
     ) -> Action:
-        auth_actions = {
+        actions = {
             "SIGN_IN": SignInAction,
             "SIGN_OUT": SignOutAction,
             "WHOAMI": WhoAmIAction,
-        }
-
-        discussion_actions = {
             "CREATE_DISCUSSION": CreateDiscussionAction,
             "CREATE_REPLY": CreateReplyAction,
             "GET_DISCUSSION": GetDiscussionAction,
             "LIST_DISCUSSIONS": ListDiscussionAction,
         }
 
-        if action in auth_actions:
-            action_class = auth_actions[action]
-            return action_class(request_id, params)
-
-        if action in discussion_actions:
-            action_class = discussion_actions[action]
-            return action_class(request_id, params)
+        if action in actions:
+            action_class = actions[action]
+            return action_class(request_id, params, peer_id)
 
         raise ValueError("Unknown action")

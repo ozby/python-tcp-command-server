@@ -13,7 +13,7 @@ class SignInAction(Action):
             raise ValueError("client_id must be alphanumeric")
 
     def execute(self) -> str:
-        SessionService().set(self.params[0])
+        SessionService().set(self.peer_id, self.params[0])
         return Response(request_id=self.request_id).serialize()
 
 
@@ -24,7 +24,7 @@ class SignOutAction(Action):
         pass
 
     def execute(self) -> str:
-        SessionService().delete()
+        SessionService().delete(self.peer_id)
         return Response(request_id=self.request_id).serialize()
 
 
@@ -36,8 +36,8 @@ class WhoAmIAction(Action):
 
     def execute(self) -> str:
         params = (
-            [str(SessionService().get())]
-            if SessionService().get() is not None
+            [SessionService().get_client_id(self.peer_id)]
+            if SessionService().get_client_id(self.peer_id) is not None
             else []
         )
 
