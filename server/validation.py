@@ -16,7 +16,7 @@ class Validator:
     @classmethod
     def validate_reference(cls, reference: str) -> bool:
         parts = reference.split(".")
-        if len(parts) < 2:
+        if len(parts) != 2:
             return False
-            
+
         return all(bool(cls.ALPHANUMERIC_PATTERN.match(part)) for part in parts)

@@ -1,8 +1,12 @@
 import asyncio
 from asyncio.log import logger
 
+from server.services.service import singleton
 
-class SessionAuth:
+
+
+@singleton
+class SessionService:
     def __init__(self, writer: asyncio.StreamWriter | None = None):
         self.sessions: dict[str, str] = {}
         self.writer = writer

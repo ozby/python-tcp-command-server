@@ -25,15 +25,25 @@ class TestValidator(unittest.TestCase):
         self.assertTrue(Validator.validate_reference("xqunqcc.1m30s"))
         self.assertTrue(Validator.validate_reference("abc123.xyz789"))
         self.assertTrue(Validator.validate_reference("TEST.123"))
-        self.assertTrue(Validator.validate_reference("ref1.ref2.ref3"))
-        self.assertFalse(Validator.validate_reference("single"))
 
+        self.assertFalse(Validator.validate_reference("ref1.ref2.ref3"))
+        self.assertFalse(Validator.validate_reference("single"))
         self.assertFalse(Validator.validate_reference(""))  # empty not allowed
-        self.assertFalse(Validator.validate_reference(".abc"))  # leading dot not allowed
-        self.assertFalse(Validator.validate_reference("abc."))  # trailing dot not allowed
-        self.assertFalse(Validator.validate_reference("abc..def"))  # empty parts not allowed
-        self.assertFalse(Validator.validate_reference("abc.@.def"))  # special chars not allowed
-        self.assertFalse(Validator.validate_reference("abc.def ghi"))  # spaces not allowed
+        self.assertFalse(
+            Validator.validate_reference(".abc")
+        )  # leading dot not allowed
+        self.assertFalse(
+            Validator.validate_reference("abc.")
+        )  # trailing dot not allowed
+        self.assertFalse(
+            Validator.validate_reference("abc..def")
+        )  # empty parts not allowed
+        self.assertFalse(
+            Validator.validate_reference("abc.@.def")
+        )  # special chars not allowed
+        self.assertFalse(
+            Validator.validate_reference("abc.def ghi")
+        )  # spaces not allowed
 
 
 if __name__ == "__main__":

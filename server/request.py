@@ -1,6 +1,8 @@
 import logging
+
 from server.actions.action_factory import ActionFactory
-from server.session import SessionAuth
+from server.services.discussion_service import DiscussionService
+from server.services.session_service import SessionService
 from server.validation import Validator
 
 MIN_PART = 2
@@ -17,7 +19,7 @@ class Request:
 
     @staticmethod
     def from_line(line: str) -> "Request":
-        parts = line.strip().split("|")
+        parts = [part for part in line.strip().split("|") if part]
 
         if len(parts) < MIN_PART:
             raise ValueError("Invalid format. Expected: request_id|action[|params]")
@@ -30,9 +32,7 @@ class Request:
         action = parts[1]
         params = parts[2:] if len(parts) >= MIN_PART else []
         logging.info(f"params: {params}")
-        action_man = ActionFactory.create_action(
-            action, request_id, params, SessionAuth()
-        )
+        action_man = ActionFactory.execute_action(action, request_id, params, SessionService())
         action_man.validate()
 
         return Request(request_id, action, params)
