@@ -4,8 +4,8 @@ from echo_server.request import Request
 
 
 class TestParserInput(unittest.TestCase):
-    def test_parse_commands(self) -> None:
-        # Test SIGN_IN command
+    def test_parse_actions(self) -> None:
+        # Test SIGN_IN action
         self.assertEqual(
             vars(Request.from_line("ougmcim|SIGN_IN|janedoe")),
             vars(Request(request_id="ougmcim", action="SIGN_IN", params=["janedoe"])),

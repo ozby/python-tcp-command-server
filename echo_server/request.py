@@ -1,8 +1,10 @@
+from echo_server.actions.action_factory import ActionFactory
 from echo_server.validation import Validator
 
 MIN_PART = 2
 COMMANDS_WITH_CLIENT_ID = ["SIGN_IN"]
-VALID_COMMANDS = ["SIGN_IN", "SIGN_OUT", "WHOAMI"]
+VALID_COMMANDS = ["SIGN_IN", "SIGN_OUT", "WHOAMI", "CREATE_DISCUSSION", "CREATE_REPLY", "GET_DISCUSSION",
+                  "LIST_DISCUSSIONS"]
 
 
 class Request:
@@ -27,14 +29,17 @@ class Request:
 
         action = parts[1]
         if action not in VALID_COMMANDS:
-            raise ValueError("Unknown command")
+            raise ValueError("Unknown action")
 
         params = parts[2:] if len(parts) > MIN_PART else []
 
+        # action = ActionFactory.create_action(action, request_id, params)
+        # action.validate()
+
         if action not in COMMANDS_WITH_CLIENT_ID and len(params) > 0:
-            raise ValueError("client_id only allowed with SIGN_IN command")
+            raise ValueError("client_id only allowed with SIGN_IN action")
         if action in COMMANDS_WITH_CLIENT_ID and len(params) == 0:
-            raise ValueError(f"{action} command requires third parameter")
+            raise ValueError(f"{action} action requires third parameter")
         if len(params) > 0 and not Validator.validate_client_id(params[0]):
             raise ValueError("client_id must be alphanumeric")
 

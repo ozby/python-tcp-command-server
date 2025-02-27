@@ -26,11 +26,11 @@ async def test_echo_server_echo(echo_server):
     port = echo_server._server.sockets[0].getsockname()[1]
     reader, writer = await asyncio.open_connection("127.0.0.1", port)
 
-    test_commands = ["hijklmn|SIGN_IN|testuser", "abcdefg|WHOAMI", "opqrstu|SIGN_OUT"]
+    test_actions = ["hijklmn|SIGN_IN|testuser", "abcdefg|WHOAMI", "opqrstu|SIGN_OUT"]
     expected_responses = ["hijklmn\n", "abcdefg|testuser\n", "opqrstu\n"]
 
-    for i, command in enumerate(test_commands):
-        writer.write((command + "\n").encode())
+    for i, action in enumerate(test_actions):
+        writer.write((action + "\n").encode())
         await writer.drain()
 
         response = await reader.readline()
