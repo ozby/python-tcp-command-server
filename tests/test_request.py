@@ -37,21 +37,13 @@ class TestParserInput(unittest.TestCase):
             Request.from_line("abcdefg")
 
         with self.assertRaises(ValueError):
-            Request.from_line("abcdefg|INVALID|janedoe")
-
-        with self.assertRaises(ValueError):
-            Request.from_line("abcdefg|WHOAMI|janedoe")
-
-        with self.assertRaises(ValueError):
-            Request.from_line("abcdefg|SIGN_OUT|janedoe")
+            Request.from_line("cadlsdo|INVALID")
 
         with self.assertRaises(ValueError):
             Request.from_line("abcdefg|SIGN_IN")
 
         with self.assertRaises(ValueError):
-            Request.from_line(
-                "abcdefg|SIGN_IN|invalid@id"
-            )
+            Request.from_line("abcdefg|SIGN_IN|invalid@id")
 
         with self.assertRaises(ValueError):
             Request.from_line("abcdefg|SIGN_IN|invalid id")

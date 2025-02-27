@@ -1,6 +1,7 @@
 """Integration Test for the TCP Echo Server."""
 
 import asyncio
+from typing import AsyncGenerator
 
 import pytest
 
@@ -8,7 +9,7 @@ from echo_server import EchoServer
 
 
 @pytest.fixture
-async def echo_server():
+async def echo_server() -> AsyncGenerator[EchoServer, None]:
     server = EchoServer(port=0)
     task = asyncio.create_task(server.start())
     await asyncio.sleep(0.1)
@@ -22,7 +23,7 @@ async def echo_server():
 
 
 @pytest.mark.asyncio
-async def test_echo_server_echo(echo_server):
+async def test_echo_server_echo(echo_server) -> None:
     port = echo_server._server.sockets[0].getsockname()[1]
     reader, writer = await asyncio.open_connection("127.0.0.1", port)
 

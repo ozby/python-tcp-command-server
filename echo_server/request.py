@@ -1,10 +1,8 @@
 from echo_server.actions.action_factory import ActionFactory
+from echo_server.session import SessionAuth
 from echo_server.validation import Validator
 
 MIN_PART = 2
-COMMANDS_WITH_CLIENT_ID = ["SIGN_IN"]
-VALID_COMMANDS = ["SIGN_IN", "SIGN_OUT", "WHOAMI", "CREATE_DISCUSSION", "CREATE_REPLY", "GET_DISCUSSION",
-                  "LIST_DISCUSSIONS"]
 
 
 class Request:
@@ -17,7 +15,7 @@ class Request:
         self.params = params
 
     @staticmethod
-    def from_line(line: str):
+    def from_line(line: str) -> "Request":
         parts = line.strip().split("|", MIN_PART)
 
         if len(parts) < MIN_PART:
@@ -28,19 +26,9 @@ class Request:
             raise ValueError("Invalid request_id. Must be 7 lowercase letters (a-z)")
 
         action = parts[1]
-        if action not in VALID_COMMANDS:
-            raise ValueError("Unknown action")
-
         params = parts[2:] if len(parts) > MIN_PART else []
 
-        # action = ActionFactory.create_action(action, request_id, params)
-        # action.validate()
-
-        if action not in COMMANDS_WITH_CLIENT_ID and len(params) > 0:
-            raise ValueError("client_id only allowed with SIGN_IN action")
-        if action in COMMANDS_WITH_CLIENT_ID and len(params) == 0:
-            raise ValueError(f"{action} action requires third parameter")
-        if len(params) > 0 and not Validator.validate_client_id(params[0]):
-            raise ValueError("client_id must be alphanumeric")
+        action_man = ActionFactory.create_action(action, request_id, params, SessionAuth())
+        action_man.validate()
 
         return Request(request_id, action, params)

@@ -7,7 +7,12 @@ from echo_server.session import SessionAuth
 
 class ActionFactory:
     @staticmethod
-    def create_action(action: str, request_id: str, params: list[str], session_auth: SessionAuth) -> Action:
+    def create_action(
+        action: str,
+        request_id: str,
+        params: list[str],
+        session_auth: SessionAuth,
+    ) -> Action:
         if action == "SIGN_IN":
             return SignInAction(request_id, params, session_auth)
         elif action == "SIGN_OUT":

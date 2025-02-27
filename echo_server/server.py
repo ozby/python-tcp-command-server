@@ -2,11 +2,10 @@
 
 import asyncio
 import logging
-from typing import NoReturn
+from typing import AsyncGenerator, NoReturn
 
 from echo_server.actions.action_factory import ActionFactory
 from echo_server.request import Request
-from echo_server.response import Response
 from echo_server.session import SessionAuth
 
 logger = logging.getLogger(__name__)
@@ -39,11 +38,16 @@ class EchoServer:
                 parsed_command = Request.from_line(data.decode())
                 logger.info("parsed_command: %s", parsed_command)
 
-                actionManager = ActionFactory.create_action(parsed_command.action, parsed_command.request_id, parsed_command.params, self.session_auth)
-                responseFromAction = actionManager.execute()
-                logger.info("response: %s", responseFromAction)
-                
-                writer.write(responseFromAction.encode())
+                action_man = ActionFactory.create_action(
+                    parsed_command.action,
+                    parsed_command.request_id,
+                    parsed_command.params,
+                    self.session_auth,
+                )
+                response_from_action = action_man.execute()
+                logger.info("response: %s", response_from_action)
+
+                writer.write(response_from_action.encode())
                 await writer.drain()
 
         except Exception as e:
@@ -72,7 +76,7 @@ class EchoServer:
             logger.info("Server stopped")
 
 
-async def run_server() -> NoReturn:
+async def run_server() -> None:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
@@ -85,3 +89,4 @@ async def run_server() -> NoReturn:
     except Exception as e:
         logger.error("Server error: %s", e)
         raise
+    return None
