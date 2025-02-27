@@ -1,6 +1,7 @@
 # actions.py
 
 from echo_server.actions.action import Action
+from echo_server.response import Response
 
 
 class SignInAction(Action):
@@ -10,8 +11,8 @@ class SignInAction(Action):
         # Add more validation logic if needed
 
     def execute(self):
-        # Implement the execution logic for SIGN_IN
-        pass
+        self.session_auth.set(self.params[0])
+        return Response(request_id=self.request_id).serialize()
 
 class SignOutAction(Action):
     def validate(self):
@@ -19,8 +20,8 @@ class SignOutAction(Action):
             raise ValueError("SIGN_OUT action does not require parameters")
 
     def execute(self):
-        # Implement the execution logic for SIGN_OUT
-        pass
+        self.session_auth.delete()
+        return Response(request_id=self.request_id).serialize()
 
 class WhoAmIAction(Action):
     def validate(self):
@@ -28,7 +29,8 @@ class WhoAmIAction(Action):
             raise ValueError("WHOAMI action does not require parameters")
 
     def execute(self):
-        # Implement the execution logic for WHOAMI
-        pass
+        params = ([self.session_auth.get()] if self.session_auth.get() is not None else [])
+        response_data = Response(request_id=self.request_id, params=params)
+        return response_data.serialize()
 
 # Add more action classes for other actions

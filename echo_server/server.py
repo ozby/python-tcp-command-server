@@ -4,8 +4,10 @@ import asyncio
 import logging
 from typing import NoReturn
 
+from echo_server.actions.action_factory import ActionFactory
 from echo_server.request import Request
 from echo_server.response import Response
+from echo_server.session import SessionAuth
 
 logger = logging.getLogger(__name__)
 
@@ -15,17 +17,17 @@ class EchoServer:
         self.host = host
         self.port = port
         self._server: asyncio.AbstractServer | None = None
-        self.sessions = {}
 
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
+        self.session_auth = SessionAuth(writer)
+
         peer = writer.get_extra_info("peername")
         peer_str = f"{peer[0]}:{peer[1]}"
         logger.info("Peer str: %s", peer_str)
 
         logger.info("New connection from %s", peer)
-        logger.info("Sessions: %s", self.sessions)
 
         try:
             while True:
@@ -37,39 +39,18 @@ class EchoServer:
                 parsed_command = Request.from_line(data.decode())
                 logger.info("parsed_command: %s", parsed_command)
 
-                if parsed_command.action == "SIGN_IN":
-                    self.sessions[peer_str] = parsed_command.params[0]
-                    response = Response(
-                        request_id=parsed_command.request_id
-                    ).serialize()
-                    logger.info("response: %s", response)
-
-                    writer.write(response.encode())
-                if parsed_command.action == "SIGN_OUT":
-                    if peer_str in self.sessions:
-                        del self.sessions[peer_str]
-                    response = Response(
-                        request_id=parsed_command.request_id
-                    ).serialize()
-                    writer.write(response.encode())
-                elif parsed_command.action == "WHOAMI":
-                    params = (
-                        [self.sessions[peer_str]] if peer_str in self.sessions else []
-                    )
-                    response_data = Response(
-                        request_id=parsed_command.request_id, params=params
-                    )
-                    response = response_data.serialize()
-                    writer.write(response.encode())
-                # logger.info("Responding %r to %s", response, peer)
+                actionManager = ActionFactory.create_action(parsed_command.action, parsed_command.request_id, parsed_command.params, self.session_auth)
+                responseFromAction = actionManager.execute()
+                logger.info("response: %s", responseFromAction)
+                
+                writer.write(responseFromAction.encode())
                 await writer.drain()
 
         except Exception as e:
             logger.error("Error handling client %s: %s", peer, e)
         finally:
             writer.close()
-            if peer_str in self.sessions:
-                del self.sessions[peer_str]
+            self.session_auth.delete()
             await writer.wait_closed()
             logger.info("Connection closed from %s", peer)
 
