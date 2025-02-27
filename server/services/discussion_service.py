@@ -30,12 +30,19 @@ class DiscussionService:
     def __init__(self):
         self.discussions: dict[str, Discussion] = {}
 
+    def _sanitize_comment(self, comment: str) -> str:
+        if "," in comment:
+            # Replace any double quotes with escaped double quotes
+            escaped_comment = comment.replace('"', '""')
+            # Wrap in double quotes since comment contains comma
+            return f'"{escaped_comment}"'
+        return comment
 
     def create_discussion(self, reference: str, comment: str, client_id: str) -> str:
         reference_prefix = reference.split('.')[0]
         discussion_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
         discussion = Discussion(discussion_id=discussion_id,reference_prefix=reference_prefix, reference=reference, author=client_id, replies=[
-            Reply(author=client_id, comment=comment)
+            Reply(author=client_id, comment=self._sanitize_comment(comment))
         ], date=datetime.datetime.now())
         self.discussions[discussion_id] = discussion
 
@@ -43,7 +50,7 @@ class DiscussionService:
     
     def create_reply(self, discussion_id: str, comment: str, client_id: str) -> str:
         discussion = self.discussions[discussion_id]
-        discussion.replies.append(Reply(author=client_id, comment=comment))
+        discussion.replies.append(Reply(author=client_id, comment=self._sanitize_comment(comment)))
         return discussion_id
 
     def get_discussion(self, discussion_id: str) -> list[str]:

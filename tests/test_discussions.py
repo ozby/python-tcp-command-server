@@ -41,16 +41,31 @@ def test_create_discussion_executes():
         
         mock_service.create_discussion.assert_called_once_with("ref.123", "test comment", SessionService().get_client_id(TEST_PEER_ID))
 
-# def test_create_reply_executes():
-    # reply = CreateReplyAction("abcdefg", ["discidi", "test comment"])
-    # replied = reply.execute().strip("\n")
-    # print(f"replied: {replied}")
-    # created_discussion_id = created.execute().strip("\n").split("|")[1]
-    # print(f"created_discussion_id: {created_discussion_id}")
+def test_create_reply_executes():
+    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+    created_discussion_id = created.execute().strip("\n").split("|")[1]
 
-    # returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id])
-    # returned = returned_discussion.execute()
-    # print(f"returned: {returned}")
+    reply = CreateReplyAction("abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID)
+    replied = reply.execute()
+    print(f"replied: {replied}")
+
+    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id], TEST_PEER_ID)
+    returned = returned_discussion.execute()
+    assert '"' not in returned
+    print(f"returned discussion after reply: {returned}")
+
+def test_create_reply_executes_with_comma():
+    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+    created_discussion_id = created.execute().strip("\n").split("|")[1]
+
+    reply = CreateReplyAction("abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID)
+    replied = reply.execute()
+    print(f"replied: {replied}")
+
+    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id], TEST_PEER_ID)
+    returned = returned_discussion.execute()
+    assert '"' in returned
+    print(f"returned discussion after reply: {returned}")
 
 def test_get_discussion_executes():
     created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
