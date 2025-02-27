@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from typing import AsyncGenerator, NoReturn
 
 from echo_server.actions.action_factory import ActionFactory
 from echo_server.request import Request
@@ -89,4 +88,3 @@ async def run_server() -> None:
     except Exception as e:
         logger.error("Server error: %s", e)
         raise
-    return None

@@ -26,6 +26,7 @@ target-version = ["py311"]
 line-length = 88
 target-version = "py311"
 select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
+ignore = ["PLR2004"]
 
 [tool.mypy]
 python_version = "3.11"

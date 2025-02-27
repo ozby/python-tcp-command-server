@@ -1,7 +1,7 @@
 """Integration Test for the TCP Echo Server."""
 
 import asyncio
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 

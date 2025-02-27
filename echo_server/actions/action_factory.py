@@ -1,7 +1,15 @@
 # action_factory.py
 
 from echo_server.actions.action import Action
-from echo_server.actions.actions import SignInAction, SignOutAction, WhoAmIAction
+from echo_server.actions.actions import (
+    CreateDiscussionAction,
+    CreateReplyAction,
+    GetDiscussionAction,
+    ListDiscussionAction,
+    SignInAction,
+    SignOutAction,
+    WhoAmIAction,
+)
 from echo_server.session import SessionAuth
 
 
@@ -13,18 +21,18 @@ class ActionFactory:
         params: list[str],
         session_auth: SessionAuth,
     ) -> Action:
-        if action == "SIGN_IN":
-            return SignInAction(request_id, params, session_auth)
-        elif action == "SIGN_OUT":
-            return SignOutAction(request_id, params, session_auth)
-        elif action == "WHOAMI":
-            return WhoAmIAction(request_id, params, session_auth)
-        # elif action == "CREATE_DISCUSSION":
-        #     return CreateDiscussionAction(request_id, params)
-        # elif action == "CREATE_REPLY":
-        #     return CreateReplyAction(request_id, params)
-        # elif action == "GET_DISCUSSION":
-        #     return GetDiscussionAction(request_id, params)
-        # Add more conditions for other actions
-        else:
+        action_map = {
+            "SIGN_IN": SignInAction,
+            "SIGN_OUT": SignOutAction,
+            "WHOAMI": WhoAmIAction,
+            "CREATE_DISCUSSION": CreateDiscussionAction,
+            "CREATE_REPLY": CreateReplyAction,
+            "GET_DISCUSSION": GetDiscussionAction,
+            "LIST_DISCUSSIONS": ListDiscussionAction,
+        }
+
+        action_class = action_map.get(action)
+        if action_class is None:
             raise ValueError("Unknown action")
+
+        return action_class(request_id, params, session_auth)

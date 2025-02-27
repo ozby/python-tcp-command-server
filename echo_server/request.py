@@ -28,7 +28,9 @@ class Request:
         action = parts[1]
         params = parts[2:] if len(parts) > MIN_PART else []
 
-        action_man = ActionFactory.create_action(action, request_id, params, SessionAuth())
+        action_man = ActionFactory.create_action(
+            action, request_id, params, SessionAuth()
+        )
         action_man.validate()
 
         return Request(request_id, action, params)
