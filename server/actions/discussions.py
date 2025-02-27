@@ -55,9 +55,14 @@ class GetDiscussionAction(Action):
     def execute(self) -> str:
         discussion_service = DiscussionService()
         discussion = discussion_service.get_discussion(self.params[0])
-        print(f"getdiscussion: {discussion}")
 
-        # return Response(request_id=self.request_id, params=[discussion]).serialize()
+        replies = []
+        for reply in discussion.replies:
+            replies.append(f"{reply.author}|{reply.comment}")
+        params = [
+            discussion.discussion_id, discussion.author, discussion.reference, 
+            "(" + ",".join(replies) + ")"]
+        return Response(request_id=self.request_id, params=params).serialize()
 
 
 class ListDiscussionAction(Action):

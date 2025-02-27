@@ -55,7 +55,7 @@ def test_get_discussion_executes():
 
     returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id])
     returned = returned_discussion.execute()
-    print(f"returned: {returned}")
+    assert returned == f"abcdefg|{created_discussion_id}|author|ref.123|(author|test comment)\n"
 
 
 def test_create_reply_validates_params():
