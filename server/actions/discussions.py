@@ -92,8 +92,7 @@ class ListDiscussionAction(Action):
             replies = []
             for reply in discussion.replies:
                 replies.append(f"{reply.author}|{reply.comment}")
-            discussion_list.append("(" +
-                "|".join([discussion.discussion_id, discussion.reference, f"({','.join(replies)})"])
-            + ")")
+
+            discussion_list.append(f"{discussion.discussion_id}|{discussion.reference}|({','.join(replies)})")
         # print(f"discussion_list: {",".join(discussion_list)}")
-        return Response(request_id=self.request_id, params=discussion_list).serialize()
+        return Response(request_id=self.request_id, params=discussion_list).serialize_list()

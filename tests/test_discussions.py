@@ -100,16 +100,24 @@ def test_get_discussion_validates_params():
 
 
 def test_list_discussion_validates_params():
-    # create = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"]) 
-    # createResult = create.execute().split("|")[1]
-    # create2 = CreateDiscussionAction("zbcdefg", ["ref.234", "test comment2"]) 
-    # createResult2 = create2.execute().split("|")[1]
+    created = CreateDiscussionAction("abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID)
+    created_discussion_id = created.execute().strip("\n").split("|")[1]
 
-    action = ListDiscussionAction("abcdefg", [])
-    action.validate() # Should not raise
-    # print(f"\List Result: {result}")  # Print the result for debugging
+    reply = CreateReplyAction("replyaa", [created_discussion_id, "I love this video. What did you use to make it?"], TEST_PEER_ID)
+    replied = reply.execute()
+    
+    reply = CreateReplyAction("replybb", [created_discussion_id, "I used something called \"Synthesia\", it's pretty cool!"], TEST_PEER_ID)
+    replied = reply.execute()
 
-    # assert result == f"abcdefg|{createResult},{createResult2}"
+    created = CreateDiscussionAction("zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID)
+    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    
+    reply = CreateReplyAction("replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID)
+    replied = reply.execute()
+    
+    reply = CreateReplyAction("replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID)
+    replied = reply.execute()
+
 
 def test_list_discussion_executes():
     action = ListDiscussionAction("abcdefg", [])
