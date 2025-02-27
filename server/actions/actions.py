@@ -50,6 +50,7 @@ class WhoAmIAction(Action):
 
 class CreateDiscussionAction(Action):
     def validate(self) -> None:
+        logging.info(f"params: {self.params}")
         if len(self.params) != 2:
             raise ValueError("action requires two parameters")
 

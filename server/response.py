@@ -14,6 +14,6 @@ class Response:
 
         parts = [self.request_id]
         if len(self.params) > 0:
-            parts.append(self.params[0])
+            parts.extend(self.params)
 
         return "|".join(parts) + "\n"

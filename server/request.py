@@ -1,3 +1,4 @@
+import logging
 from server.actions.action_factory import ActionFactory
 from server.session import SessionAuth
 from server.validation import Validator
@@ -16,7 +17,7 @@ class Request:
 
     @staticmethod
     def from_line(line: str) -> "Request":
-        parts = line.strip().split("|", MIN_PART)
+        parts = line.strip().split("|")
 
         if len(parts) < MIN_PART:
             raise ValueError("Invalid format. Expected: request_id|action[|params]")
@@ -25,9 +26,10 @@ class Request:
         if not Validator.validate_request_id(request_id):
             raise ValueError("Invalid request_id. Must be 7 lowercase letters (a-z)")
 
+        logging.info(f"parts: {parts}")
         action = parts[1]
-        params = parts[2:] if len(parts) > MIN_PART else []
-
+        params = parts[2:] if len(parts) >= MIN_PART else []
+        logging.info(f"params: {params}")
         action_man = ActionFactory.create_action(
             action, request_id, params, SessionAuth()
         )

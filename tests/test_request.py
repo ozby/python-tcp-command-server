@@ -10,6 +10,10 @@ class TestParserInput(unittest.TestCase):
             vars(Request.from_line("ougmcim|SIGN_IN|janedoe")),
             vars(Request(request_id="ougmcim", action="SIGN_IN", params=["janedoe"])),
         )
+        self.assertEqual(
+            vars(Request.from_line("ykkngzx|CREATE_DISCUSSION|iofetzv.0s|Hey, folks. What do you think of my video? Does it have enough \"polish\"?")),
+            vars(Request(request_id="ykkngzx", action="CREATE_DISCUSSION", params=["iofetzv.0s", "Hey, folks. What do you think of my video? Does it have enough \"polish\"?"]))
+        )
 
         self.assertEqual(
             vars(Request.from_line("iwhygsi|WHOAMI")),
