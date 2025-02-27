@@ -38,29 +38,21 @@ class DiscussionService:
             Reply(author="author", comment=comment)
         ], date=datetime.datetime.now())
         self.discussions[discussion_id] = discussion
-        logging.info(f"Discussion created: {discussion_id}")
-        logging.info(f"{discussion}")
 
         return discussion_id
     
     def create_reply(self, discussion_id: str, comment: str) -> str:
         discussion = self.discussions[discussion_id]
         discussion.replies.append(Reply(author="author", comment=comment))
-        logging.info(f"Reply added to discussion: {discussion_id}")
-        logging.info(f"Discussion: {discussion}")
-        logging.info(f"Discussions: {self.discussions}")
         return discussion_id
 
     def get_discussion(self, discussion_id: str) -> list[str]:
         return self.discussions[discussion_id]
     
-    def list_discussions(self) -> list[str]:
-        print(f"keys: {",".join(self.discussions.keys())}")
-        print(f"values: {self.discussions.values()}")
-        print(f"items: {self.discussions.items()}")
+    def list_discussions(self, reference_prefix: str = None) -> list[str]:
+        if reference_prefix:
+            return [discussion for discussion in self.discussions.values() if discussion.reference_prefix == reference_prefix]
+        else:
+            return list(self.discussions.values())
 
-        replies = []
-        for discussion in self.discussions.values():
-            for reply in discussion.replies:
-                replies.append(f"{reply.author}|{reply.comment}")
-        return ",".join(replies)
+        return list(self.discussions.values())

@@ -65,10 +65,19 @@ class TestParserInput(unittest.TestCase):
         )
 
         self.assertEqual(
-            vars(Request.from_line("xthbsuv|LIST_DISCUSSIONS|iofetzv")),
+            vars(Request.from_line("xthbsuv|LIST_DISCUSSIONS")),
             vars(
                 Request(
-                    request_id="xthbsuv", action="LIST_DISCUSSIONS", params=["iofetzv"]
+                    request_id="xthbsuv", action="LIST_DISCUSSIONS", params=[]
+                )
+            ),
+        )
+
+        self.assertEqual(
+            vars(Request.from_line("xthbsuv|LIST_DISCUSSIONS|refprefix")),
+            vars(
+                Request(
+                    request_id="xthbsuv", action="LIST_DISCUSSIONS", params=["refprefix"]
                 )
             ),
         )
