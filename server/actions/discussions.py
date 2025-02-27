@@ -52,19 +52,21 @@ class GetDiscussionAction(Action):
         #     raise ValueError("client_id must be alphanumeric")
 
     def execute(self) -> str:
-        return Response(request_id=self.request_id).serialize()
+        discussion_service = DiscussionService()
+        discussion = discussion_service.get_discussion(self.params[0])
+        return Response(request_id=self.request_id, params=[discussion]).serialize()
 
 
 class ListDiscussionAction(Action):
     def validate(self) -> None:
-        if len(self.params) != 1:
-            raise ValueError("action requires one parameters")
-
-        discussion_id = self.params[0]
-        logging.info(f"discussion_id: {discussion_id}")
+        if len(self.params) > 1:
+            raise ValueError("action can't have more than one parameter")
 
         # if len(self.params) > 0 and not Validator.validate_client_id(self.params[0]):
         #     raise ValueError("client_id must be alphanumeric")
 
     def execute(self) -> str:
-        return Response(request_id=self.request_id).serialize()
+        discussion_service = DiscussionService()
+        discussions = discussion_service.list_discussions()
+
+        return Response(request_id=self.request_id, params=[discussions]).serialize()
