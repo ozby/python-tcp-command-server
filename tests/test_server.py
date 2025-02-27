@@ -5,12 +5,12 @@ from collections.abc import AsyncGenerator
 
 import pytest
 
-from server import EchoServer
+from server import Server
 
 
 @pytest.fixture
-async def server() -> AsyncGenerator[EchoServer, None]:
-    server = EchoServer(port=0)
+async def server() -> AsyncGenerator[Server, None]:
+    server = Server(port=0)
     task = asyncio.create_task(server.start())
     await asyncio.sleep(0.1)
     yield server

@@ -10,7 +10,7 @@ from server.session import SessionAuth
 logger = logging.getLogger(__name__)
 
 
-class EchoServer:
+class Server:
     def __init__(self, host: str = "0.0.0.0", port: int = 8989) -> None:
         self.host = host
         self.port = port
@@ -80,7 +80,7 @@ async def run_server() -> None:
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
-    server = EchoServer()
+    server = Server()
     try:
         await server.start()
     except KeyboardInterrupt:
