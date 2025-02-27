@@ -1,4 +1,4 @@
-from echo_server.validation import Validator
+from server.validation import Validator
 
 
 class Response:

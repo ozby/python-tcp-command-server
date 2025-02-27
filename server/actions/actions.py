@@ -2,9 +2,9 @@
 
 import logging
 
-from echo_server.actions.action import Action
-from echo_server.response import Response
-from echo_server.validation import Validator
+from server.actions.action import Action
+from server.response import Response
+from server.validation import Validator
 
 
 class SignInAction(Action):

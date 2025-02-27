@@ -1,6 +1,6 @@
-from echo_server.actions.action_factory import ActionFactory
-from echo_server.session import SessionAuth
-from echo_server.validation import Validator
+from server.actions.action_factory import ActionFactory
+from server.session import SessionAuth
+from server.validation import Validator
 
 MIN_PART = 2
 

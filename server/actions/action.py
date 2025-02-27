@@ -1,7 +1,7 @@
 # action.py
 from abc import ABC, abstractmethod
 
-from echo_server.session import SessionAuth
+from server.session import SessionAuth
 
 
 class Action(ABC):

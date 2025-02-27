@@ -1,7 +1,7 @@
 # action_factory.py
 
-from echo_server.actions.action import Action
-from echo_server.actions.actions import (
+from server.actions.action import Action
+from server.actions.actions import (
     CreateDiscussionAction,
     CreateReplyAction,
     GetDiscussionAction,
@@ -10,7 +10,7 @@ from echo_server.actions.actions import (
     SignOutAction,
     WhoAmIAction,
 )
-from echo_server.session import SessionAuth
+from server.session import SessionAuth
 
 
 class ActionFactory:

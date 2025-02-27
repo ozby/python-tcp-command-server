@@ -5,11 +5,11 @@ from collections.abc import AsyncGenerator
 
 import pytest
 
-from echo_server import EchoServer
+from server import EchoServer
 
 
 @pytest.fixture
-async def echo_server() -> AsyncGenerator[EchoServer, None]:
+async def server() -> AsyncGenerator[EchoServer, None]:
     server = EchoServer(port=0)
     task = asyncio.create_task(server.start())
     await asyncio.sleep(0.1)
@@ -23,8 +23,8 @@ async def echo_server() -> AsyncGenerator[EchoServer, None]:
 
 
 @pytest.mark.asyncio
-async def test_echo_server_echo(echo_server) -> None:
-    port = echo_server._server.sockets[0].getsockname()[1]
+async def test_server_echo(server) -> None:
+    port = server._server.sockets[0].getsockname()[1]
     reader, writer = await asyncio.open_connection("127.0.0.1", port)
 
     test_actions = ["hijklmn|SIGN_IN|testuser", "abcdefg|WHOAMI", "opqrstu|SIGN_OUT"]

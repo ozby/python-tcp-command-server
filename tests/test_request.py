@@ -1,6 +1,6 @@
 import unittest
 
-from echo_server.request import Request
+from server.request import Request
 
 
 class TestParserInput(unittest.TestCase):

@@ -3,9 +3,9 @@
 import asyncio
 import logging
 
-from echo_server.actions.action_factory import ActionFactory
-from echo_server.request import Request
-from echo_server.session import SessionAuth
+from server.actions.action_factory import ActionFactory
+from server.request import Request
+from server.session import SessionAuth
 
 logger = logging.getLogger(__name__)
 

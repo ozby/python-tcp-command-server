@@ -1,6 +1,6 @@
 import unittest
 
-from echo_server.response import Response
+from server.response import Response
 
 
 class TestResponse(unittest.TestCase):
