@@ -17,6 +17,7 @@ class Reply:
     
 @dataclass 
 class Discussion:
+    discussion_id: str
     reference: str
     author: str
     replies: list[Reply]
@@ -30,10 +31,13 @@ class DiscussionService:
         self.discussions: dict[str, list[Discussion]] = {}
 
 
+    def create_discussion(self, reference: str, comment: str) -> str:
         discussion_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
-        self.discussions[discussion_id].insert(Discussion(reference=reference, author=author, replies=[], date=datetime.datetime.now()))
+        discussion = Discussion(discussion_id=discussion_id,reference=reference, author="author", replies=[], date=datetime.datetime.now())
+        self.discussions[discussion_id] = discussion
         logging.info(f"Discussion created: {discussion_id}")
         logging.info(f"Discussions: {self.discussions}")
+        return discussion_id
 
     def get_discussion(self, reference: str) -> list[str]:
         return self.discussions[reference]

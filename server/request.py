@@ -1,8 +1,6 @@
 import logging
 
 from server.actions.action_factory import ActionFactory
-from server.services.discussion_service import DiscussionService
-from server.services.session_service import SessionService
 from server.validation import Validator
 
 MIN_PART = 2
@@ -32,7 +30,7 @@ class Request:
         action = parts[1]
         params = parts[2:] if len(parts) >= MIN_PART else []
         logging.info(f"params: {params}")
-        action_man = ActionFactory.execute_action(action, request_id, params, SessionService())
+        action_man = ActionFactory.execute_action(action, request_id, params)
         action_man.validate()
 
         return Request(request_id, action, params)

@@ -5,7 +5,6 @@ import logging
 
 from server.actions.action_factory import ActionFactory
 from server.request import Request
-from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 
 logger = logging.getLogger(__name__)
@@ -20,7 +19,6 @@ class Server:
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        self.session_service = SessionService(writer)
         peer = writer.get_extra_info("peername")
         peer_str = f"{peer[0]}:{peer[1]}"
         logger.info("Peer str: %s", peer_str)
@@ -40,7 +38,6 @@ class Server:
                     parsed_command.action,
                     parsed_command.request_id,
                     parsed_command.params,
-                    self.session_service,
                 )
                 response_from_action = action_man.execute()
                 logger.info("response: %s", response_from_action)
@@ -52,7 +49,7 @@ class Server:
             logger.error("Error handling client %s: %s", peer, e)
         finally:
             writer.close()
-            self.session_service.delete()
+            SessionService().delete()
             await writer.wait_closed()
             logger.info("Connection closed from %s", peer)
 

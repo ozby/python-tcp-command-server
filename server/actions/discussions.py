@@ -21,8 +21,8 @@ class CreateDiscussionAction(Action):
 
     def execute(self) -> str:
         discussion_service = DiscussionService()
-        discussion_service.create_discussion(self.params[0], self.params[1])
-        return Response(request_id=self.request_id).serialize()
+        discussion_id = discussion_service.create_discussion(self.params[0], self.params[1])
+        return Response(request_id=self.request_id, params=[discussion_id]).serialize()
 
 
 class CreateReplyAction(Action):

@@ -12,8 +12,6 @@ from server.actions.discussions import (
     GetDiscussionAction,
     ListDiscussionAction,
 )
-from server.services.discussion_service import DiscussionService
-from server.services.session_service import SessionService
 
 
 class ActionFactory:
@@ -22,7 +20,6 @@ class ActionFactory:
         action: str,
         request_id: str,
         params: list[str],
-        session_service: SessionService,
     ) -> Action:
         auth_actions = {
             "SIGN_IN": SignInAction,
@@ -39,10 +36,10 @@ class ActionFactory:
 
         if action in auth_actions:
             action_class = auth_actions[action]
-            return action_class(request_id, params, session_service)
+            return action_class(request_id, params)
 
         if action in discussion_actions:
             action_class = discussion_actions[action]
-            return action_class(request_id, params, session_service)
+            return action_class(request_id, params)
 
         raise ValueError("Unknown action")

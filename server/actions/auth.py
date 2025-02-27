@@ -3,6 +3,7 @@
 
 from server.actions.action import Action
 from server.response import Response
+from server.services.session_service import SessionService
 from server.validation import Validator
 
 
@@ -15,7 +16,7 @@ class SignInAction(Action):
             raise ValueError("client_id must be alphanumeric")
 
     def execute(self) -> str:
-        self.session_service.set(self.params[0])
+        SessionService().set(self.params[0])
         return Response(request_id=self.request_id).serialize()
 
 
@@ -26,7 +27,7 @@ class SignOutAction(Action):
         pass
 
     def execute(self) -> str:
-        self.session_service.delete()
+        SessionService().delete()
         return Response(request_id=self.request_id).serialize()
 
 
@@ -38,8 +39,8 @@ class WhoAmIAction(Action):
 
     def execute(self) -> str:
         params = (
-            [str(self.session_service.get())]
-            if self.session_service.get() is not None
+            [str(SessionService().get())]
+            if SessionService().get() is not None
             else []
         )
 
