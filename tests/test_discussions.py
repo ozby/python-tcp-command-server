@@ -80,20 +80,22 @@ def test_get_discussion_validates_params():
 
 
 
-# def test_list_discussion_validates_params():
-#     create = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"]) 
-#     createResult = create.execute().split("|")[1]
-#     create2 = CreateDiscussionAction("zbcdefg", ["ref.234", "test comment2"]) 
-#     createResult2 = create2.execute().split("|")[1]
+def test_list_discussion_validates_params():
+    # create = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"]) 
+    # createResult = create.execute().split("|")[1]
+    # create2 = CreateDiscussionAction("zbcdefg", ["ref.234", "test comment2"]) 
+    # createResult2 = create2.execute().split("|")[1]
 
-#     action = ListDiscussionAction("abcdefg", [])
-#     action.validate() # Should not raise
-#     result = action.execute()
-#     print(f"\List Result: {result}")  # Print the result for debugging
+    action = ListDiscussionAction("abcdefg", [])
+    action.validate() # Should not raise
+    # print(f"\List Result: {result}")  # Print the result for debugging
 
-#     assert result == f"abcdefg|{createResult},{createResult2}"
+    # assert result == f"abcdefg|{createResult},{createResult2}"
 
-# def test_list_discussion_executes():
+def test_list_discussion_executes():
+    action = ListDiscussionAction("abcdefg", [])
+    result = action.execute()
+    print(f"result: {result}")
     # create = CreateDiscussionAction("ozbydee", ["ref.123", "test comment"])
     # assert create.execute() == 'ozbydee|dizcuid\n'
 
