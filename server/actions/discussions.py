@@ -1,5 +1,3 @@
-# actions.py
-
 import logging
 
 from server.actions.action import Action
@@ -37,6 +35,9 @@ class CreateReplyAction(Action):
         #     raise ValueError("client_id must be alphanumeric")
 
     def execute(self) -> str:
+        discussion_id, comment = self.params[0], self.params[1]
+        discussion_service = DiscussionService()
+        discussion_service.create_reply(discussion_id, comment)
         return Response(request_id=self.request_id).serialize()
 
 
@@ -54,7 +55,9 @@ class GetDiscussionAction(Action):
     def execute(self) -> str:
         discussion_service = DiscussionService()
         discussion = discussion_service.get_discussion(self.params[0])
-        return Response(request_id=self.request_id, params=[discussion]).serialize()
+        print(f"getdiscussion: {discussion}")
+
+        # return Response(request_id=self.request_id, params=[discussion]).serialize()
 
 
 class ListDiscussionAction(Action):

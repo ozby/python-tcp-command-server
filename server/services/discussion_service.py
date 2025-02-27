@@ -40,6 +40,15 @@ class DiscussionService:
         self.discussions[discussion_id] = discussion
         logging.info(f"Discussion created: {discussion_id}")
         logging.info(f"{discussion}")
+
+        return discussion_id
+    
+    def create_reply(self, discussion_id: str, comment: str) -> str:
+        discussion = self.discussions[discussion_id]
+        discussion.replies.append(Reply(author="author", comment=comment))
+        logging.info(f"Reply added to discussion: {discussion_id}")
+        logging.info(f"Discussion: {discussion}")
+        logging.info(f"Discussions: {self.discussions}")
         return discussion_id
 
     def get_discussion(self, discussion_id: str) -> list[str]:

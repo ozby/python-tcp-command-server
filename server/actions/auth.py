@@ -1,6 +1,3 @@
-# actions.py
-
-
 from server.actions.action import Action
 from server.response import Response
 from server.services.session_service import SessionService

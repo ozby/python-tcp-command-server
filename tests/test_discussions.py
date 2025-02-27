@@ -37,6 +37,27 @@ def test_create_discussion_executes():
         
         mock_service.create_discussion.assert_called_once_with("ref.123", "test comment")
 
+# def test_create_reply_executes():
+    # reply = CreateReplyAction("abcdefg", ["discidi", "test comment"])
+    # replied = reply.execute().strip("\n")
+    # print(f"replied: {replied}")
+    # created_discussion_id = created.execute().strip("\n").split("|")[1]
+    # print(f"created_discussion_id: {created_discussion_id}")
+
+    # returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id])
+    # returned = returned_discussion.execute()
+    # print(f"returned: {returned}")
+
+def test_get_discussion_executes():
+    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"])
+    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    print(f"created_discussion_id: {created_discussion_id}")
+
+    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id])
+    returned = returned_discussion.execute()
+    print(f"returned: {returned}")
+
+
 def test_create_reply_validates_params():
     action = CreateReplyAction("abcdefg", ["disc123", "test reply"])
     action.validate() # Should not raise

@@ -1,5 +1,3 @@
-# action_factory.py
-
 from server.actions.action import Action
 from server.actions.auth import (
     SignInAction,
