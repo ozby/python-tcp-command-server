@@ -5,7 +5,7 @@ import logging
 
 import motor.motor_asyncio
 
-from server.actions.action_factory import ActionFactory
+from server.commands.command_factory import CommandFactory
 from server.db.mongo_client import mongo_client
 from server.request import Request
 from server.services.session_service import SessionService
@@ -20,21 +20,28 @@ class Server:
         self._server: asyncio.AbstractServer | None = None
         self._notification_task: asyncio.Task | None = None
         self._peer_writers: dict[str, asyncio.StreamWriter] = {}
+        self._running = False
 
     async def _watch_notifications(self) -> None:
         """Single watcher for all notifications"""
         try:
-            print("watching notifications")
+            logger.info("Starting notification watcher")
             client = motor.motor_asyncio.AsyncIOMotorClient(
                 "mongodb://localhost:27017/?replicaSet=rs0"
             )
             collection = client.synthesia_db.notifications
             async with collection.watch([{'$match': {'operationType': 'insert'}}]) as stream:
-                async for change in stream:
+                while self._running:
                     try:
+                        change = await stream.try_next()
+                        if change is None:
+                            # No new changes, wait a bit before trying again
+                            await asyncio.sleep(0.1)
+                            continue
+                            
                         notification = change['fullDocument']
-                        print("notification: ", notification)
-                        recipient_id = change['fullDocument']['recipient_id']
+                        logger.info("Received notification: %s", notification)
+                        recipient_id = notification['recipient_id']
                         peer_id = SessionService().get_by_user_id(recipient_id)
                         peer_writer = self._peer_writers.get(peer_id)
                         if (peer_writer is None):
@@ -46,9 +53,13 @@ class Server:
                         logger.info(f"Notification sent to {peer_id}")
                         await peer_writer.drain()
                     except Exception as e:
-                        logger.error(f"Error sending notification to {peer_id}: {e}")
+                        if not self._running:
+                            break
+                        logger.error(f"Error processing notification: {e}")
+                        await asyncio.sleep(1)  # Wait before retrying
         except Exception as e:
-            logger.error(f"{e}")
+            if self._running:
+                logger.error(f"Notification watcher error: {e}")
 
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -69,16 +80,16 @@ class Server:
                 parsed_command = Request.from_line(data.decode(), peer_id)
                 logger.info("parsed_command: %s", parsed_command)
 
-                action_man = ActionFactory.execute_action(
+                command = CommandFactory.create_command(
                     parsed_command.action,
                     parsed_command.request_id,
                     parsed_command.params,
                     peer_id,
                 )
-                response_from_action = action_man.execute()
-                logger.info("response: %s", response_from_action)
+                response = command.execute()
+                logger.info("response: %s", response)
 
-                writer.write(response_from_action.encode())
+                writer.write(response.encode())
                 await writer.drain()
 
         except Exception as e:
@@ -97,9 +108,8 @@ class Server:
             self.host,
             self.port,
         )
-        # loop = asyncio.get_running_loop()
-    
         
+        self._running = True
         self._notification_task = asyncio.create_task(self._watch_notifications())
 
         logger.info("Server starting on %s:%d", self.host, self.port)
@@ -107,12 +117,32 @@ class Server:
             await self._server.serve_forever()
 
     async def stop(self) -> None:
-        if self._notification_task:
-            self._notification_task.cancel()
+        logger.info("Stopping server...")
+        self._running = False
+        
+        # Stop accepting new connections
         if self._server:
             self._server.close()
             await self._server.wait_closed()
-            logger.info("Server stopped")
+        
+        # Cancel notification task
+        if self._notification_task:
+            self._notification_task.cancel()
+            try:
+                await self._notification_task
+            except asyncio.CancelledError:
+                pass
+        
+        # Close all client connections
+        for writer in self._peer_writers.values():
+            writer.close()
+            try:
+                await writer.wait_closed()
+            except Exception as e:
+                logger.error(f"Error closing client connection: {e}")
+        
+        self._peer_writers.clear()
+        logger.info("Server stopped")
 
 
 async def run_server() -> None:
@@ -127,4 +157,5 @@ async def run_server() -> None:
         await server.stop()
     except Exception as e:
         logger.error("Server error: %s", e)
+        await server.stop()
         raise

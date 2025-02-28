@@ -2,12 +2,13 @@ from unittest.mock import patch
 
 import pytest
 
-from server.actions.discussions import (
-    CreateDiscussionAction,
-    CreateReplyAction,
-    GetDiscussionAction,
-    ListDiscussionsAction,
+from server.commands.discussion_commands import (
+    CreateDiscussionCommand,
+    CreateReplyCommand,
+    GetDiscussionCommand,
+    ListDiscussionsCommand,
 )
+from server.commands.command import CommandContext
 from server.services.session_service import SessionService
 from server.validation import Validator
 
@@ -21,34 +22,31 @@ def setup() -> None:
 
 
 def test_create_discussion_validates_params() -> None:
-    action = CreateDiscussionAction(
-        "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
-    )
-    action.validate()  # Should not raise
+    context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+    command = CreateDiscussionCommand(context)  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionAction("abcdefg", [], TEST_PEER_ID).validate()
+        CreateDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionAction("abcdefg", ["ref.123"], TEST_PEER_ID).validate()
+        CreateDiscussionCommand(CommandContext("abcdefg", ["ref.123"], TEST_PEER_ID))
 
     with pytest.raises(
         ValueError, match="reference must be period-delimited alphanumeric"
     ):
-        CreateDiscussionAction("abcdefg", ["invalid!", "test"], TEST_PEER_ID).validate()
+        CreateDiscussionCommand(CommandContext("abcdefg", ["invalid!", "test"], TEST_PEER_ID))
 
 
 def test_create_discussion_executes() -> None:
     discussion_id = "abcdzzz"
-    with patch("server.actions.discussions.DiscussionService") as mock_service_class:
+    with patch("server.commands.discussion_commands.DiscussionService") as mock_service_class:
         mock_service = mock_service_class.return_value
         mock_service.create_discussion.return_value = discussion_id
 
-        action = CreateDiscussionAction(
-            "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
-        )
+        context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+        command = CreateDiscussionCommand(context)
         # The mock will automatically be used because we're patching at the module level
-        result = action.execute().rstrip("\n")
+        result = command.execute().rstrip("\n")
         parts = result.split("|")
         assert len(parts) == 2
         assert parts[0] == "abcdefg"
@@ -61,19 +59,19 @@ def test_create_discussion_executes() -> None:
 
 
 def test_create_reply_executes() -> None:
-    created = CreateDiscussionAction(
-        "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     )
     created_discussion_id = created.execute().strip("\n").split("|")[1]
 
-    reply = CreateReplyAction(
-        "abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID
+    reply = CreateReplyCommand(
+        CommandContext("abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID)
     )
     replied = reply.execute()
     print(f"replied: {replied}")
 
-    returned_discussion = GetDiscussionAction(
-        "abcdefg", [created_discussion_id], TEST_PEER_ID
+    returned_discussion = GetDiscussionCommand(
+        CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
     )
     returned = returned_discussion.execute()
     assert '"' not in returned
@@ -81,19 +79,19 @@ def test_create_reply_executes() -> None:
 
 
 def test_create_reply_executes_with_comma() -> None:
-    created = CreateDiscussionAction(
-        "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     )
     created_discussion_id = created.execute().strip("\n").split("|")[1]
 
-    reply = CreateReplyAction(
-        "abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID
+    reply = CreateReplyCommand(
+        CommandContext("abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID)
     )
     replied = reply.execute()
     print(f"replied: {replied}")
 
-    returned_discussion = GetDiscussionAction(
-        "abcdefg", [created_discussion_id], TEST_PEER_ID
+    returned_discussion = GetDiscussionCommand(
+        CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
     )
     returned = returned_discussion.execute()
     assert '"' in returned
@@ -101,14 +99,14 @@ def test_create_reply_executes_with_comma() -> None:
 
 
 def test_get_discussion_executes() -> None:
-    created = CreateDiscussionAction(
-        "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     )
     created_discussion_id = created.execute().strip("\n").split("|")[1]
     print(f"created_discussion_id: {created_discussion_id}")
 
-    returned_discussion = GetDiscussionAction(
-        "abcdefg", [created_discussion_id], TEST_PEER_ID
+    returned_discussion = GetDiscussionCommand(
+        CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
     )
     returned = returned_discussion.execute()
     assert (
@@ -118,71 +116,73 @@ def test_get_discussion_executes() -> None:
 
 
 def test_create_reply_validates_params() -> None:
-    action = CreateReplyAction("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
-    action.validate()  # Should not raise
+    context = CommandContext("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
+    command = CreateReplyCommand(context)  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyAction("abcdefg", [], TEST_PEER_ID).validate()
+        CreateReplyCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyAction("abcdefg", ["disc123"], TEST_PEER_ID).validate()
+        CreateReplyCommand(CommandContext("abcdefg", ["disc123"], TEST_PEER_ID))
 
 
 def test_get_discussion_validates_params() -> None:
-    action = GetDiscussionAction("abcdefg", ["disc123"], TEST_PEER_ID)
-    action.validate()  # Should not raise
+    context = CommandContext("abcdefg", ["disc123"], TEST_PEER_ID)
+    command = GetDiscussionCommand(context)  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires one parameter"):
-        GetDiscussionAction("abcdefg", [], TEST_PEER_ID).validate()
+        GetDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
 
     with pytest.raises(ValueError, match="action requires one parameter"):
-        GetDiscussionAction(
-            "abcdefg",
-            ["disc123", "extra"],
-            SessionService().get_client_id(TEST_PEER_ID),
-        ).validate()
+        GetDiscussionCommand(
+            CommandContext("abcdefg", ["disc123", "extra"], TEST_PEER_ID)
+        )
 
 
 def test_list_discussion_validates_params() -> None:
-    created = CreateDiscussionAction(
-        "abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID)
     )
     created_discussion_id = created.execute().strip("\n").split("|")[1]
 
-    reply = CreateReplyAction(
-        "replyaa",
-        [created_discussion_id, "I love this video. What did you use to make it?"],
-        TEST_PEER_ID,
+    reply = CreateReplyCommand(
+        CommandContext(
+            "replyaa",
+            [created_discussion_id, "I love this video. What did you use to make it?"],
+            TEST_PEER_ID,
+        )
     )
     reply.execute()
 
-    reply = CreateReplyAction(
-        "replybb",
-        [
-            created_discussion_id,
-            'I used something called "Synthesia", it\'s pretty cool!',
-        ],
-        TEST_PEER_ID,
+    reply = CreateReplyCommand(
+        CommandContext(
+            "replybb",
+            [
+                created_discussion_id,
+                'I used something called "Synthesia", it\'s pretty cool!',
+            ],
+            TEST_PEER_ID,
+        )
     )
     reply.execute()
 
-    created = CreateDiscussionAction(
-        "zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID
+    created = CreateDiscussionCommand(
+        CommandContext("zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID)
     )
     created_discussion_id = created.execute().strip("\n").split("|")[1]
 
-    reply = CreateReplyAction(
-        "replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID
+    reply = CreateReplyCommand(
+        CommandContext("replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID)
     )
     reply.execute()
 
-    reply = CreateReplyAction(
-        "replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID
+    reply = CreateReplyCommand(
+        CommandContext("replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID)
     )
     reply.execute()
 
 
 def test_list_discussion_executes() -> None:
-    action = ListDiscussionsAction("abcdefg", [], TEST_PEER_ID)
-    result = action.execute()
+    command = ListDiscussionsCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
+    result = command.execute()
     print(f"result: {result}")
