@@ -1,7 +1,4 @@
-import pytest
 from server.services.discussion_service import DiscussionService
-from server.services.session_service import SessionService
-from tests.test_discussions import TEST_PEER_ID
 
 
 def test_create_discussion() -> None:

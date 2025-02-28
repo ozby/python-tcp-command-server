@@ -1,5 +1,5 @@
 import sys
-from typing import Union, Any, Dict
+from typing import Any
 
 import mongomock
 import pymongo
@@ -11,19 +11,19 @@ from server.services.service import singleton
 @singleton
 class MongoClient:
     def __init__(self) -> None:
-        self.client: Union[
-            mongomock.MongoClient[Dict[str, Any]], pymongo.MongoClient[Dict[str, Any]]
-        ]
+        self.client: (
+            mongomock.MongoClient[dict[str, Any]] | pymongo.MongoClient[dict[str, Any]]
+        )
         if "pytest" in sys.modules:
             self.client = mongomock.MongoClient()
         else:
             self.client = pymongo.MongoClient(
                 "mongodb://admin:password@localhost:27017/admin"
             )
-        self.db: Database[Dict[str, Any]] = self.client.synthesia_db
+        self.db: Database[dict[str, Any]] = self.client.synthesia_db
 
     @property
-    def database(self) -> Database[Dict[str, Any]]:
+    def database(self) -> Database[dict[str, Any]]:
         return self.db
 
     def close(self) -> None:

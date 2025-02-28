@@ -1,5 +1,4 @@
 import pytest
-from typing import Generator
 
 from server.db.mongo_client import mongo_client
 

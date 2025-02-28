@@ -1,10 +1,11 @@
-from typing import Any, Callable, Dict, Type, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
 
-def singleton(cls: Type[T]) -> Callable[..., T]:
-    _instances: Dict[Type[T], T] = {}
+def singleton(cls: type[T]) -> Callable[..., T]:
+    _instances: dict[type[T], T] = {}
 
     def get_instance(*args: Any, **kwargs: Any) -> T:
         if cls not in _instances:

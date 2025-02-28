@@ -1,8 +1,8 @@
 """Integration Test for the TCP Echo Server."""
 
 import asyncio
-from collections.abc import AsyncGenerator
 from asyncio.base_events import Server as AsyncioServer
+from collections.abc import AsyncGenerator
 
 import pytest
 

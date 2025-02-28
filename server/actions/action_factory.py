@@ -10,7 +10,6 @@ from server.actions.discussions import (
     GetDiscussionAction,
     ListDiscussionsAction,
 )
-from typing import Type
 
 
 class ActionFactory:
@@ -18,7 +17,7 @@ class ActionFactory:
     def execute_action(
         action: str, request_id: str, params: list[str], peer_id: str | None = None
     ) -> Action:
-        actions: dict[str, Type[Action]] = {
+        actions: dict[str, type[Action]] = {
             "SIGN_IN": SignInAction,
             "SIGN_OUT": SignOutAction,
             "WHOAMI": WhoAmIAction,
