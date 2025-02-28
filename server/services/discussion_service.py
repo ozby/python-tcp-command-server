@@ -1,25 +1,12 @@
-from dataclasses import dataclass
+import logging
 import random
 import string
-from typing import Optional
+from typing import Optional, List
 
 from server.services.service import singleton
 from server.db.mongo_client import mongo_client
-
-
-@dataclass
-class Reply:
-    client_id: str
-    comment: str
-
-
-@dataclass
-class Discussion:
-    discussion_id: str
-    reference_prefix: str
-    reference: str
-    client_id: str
-    replies: list[Reply]
+from server.db.entities.discussion import Discussion
+from server.db.entities.reply import Reply
 
 
 @singleton
@@ -49,8 +36,7 @@ class DiscussionService:
             "client_id": client_id,
             "replies": [
                 {"client_id": client_id, "comment": self._sanitize_comment(comment)}
-            ],
-            "date": datetime.datetime.now(),
+            ]
         }
 
         self.discussions.insert_one(discussion_doc)
@@ -58,9 +44,9 @@ class DiscussionService:
 
     def create_reply(self, discussion_id: str, comment: str, client_id: str) -> str:
         new_reply = {"client_id": client_id, "comment": self._sanitize_comment(comment)}
-
         self.discussions.update_one(
-            {"discussion_id": discussion_id}, {"$push": {"replies": new_reply}}
+            {"discussion_id": discussion_id}, 
+            {"$push": {"replies": new_reply}}
         )
         return discussion_id
 
@@ -74,13 +60,12 @@ class DiscussionService:
             reference_prefix=discussion_doc["reference_prefix"],
             reference=discussion_doc["reference"],
             client_id=discussion_doc["client_id"],
-            replies=[Reply(**reply) for reply in discussion_doc["replies"]],
-            date=discussion_doc["date"],
+            replies=[Reply(**reply) for reply in discussion_doc["replies"]]
         )
 
-    def list_discussions(self, reference_prefix: str = None) -> list[Discussion]:
+    def list_discussions(self, reference_prefix: str | None = None) -> List[Discussion]:
         query = {"reference_prefix": reference_prefix} if reference_prefix else {}
-        discussions = self.discussions.find(query)
+        discussion_docs = self.discussions.find(query)
 
         return [
             Discussion(
@@ -88,8 +73,7 @@ class DiscussionService:
                 reference_prefix=doc["reference_prefix"],
                 reference=doc["reference"],
                 client_id=doc["client_id"],
-                replies=[Reply(**reply) for reply in doc["replies"]],
-                date=doc["date"],
+                replies=[Reply(**reply) for reply in doc["replies"]]
             )
-            for doc in discussions
+            for doc in discussion_docs
         ]

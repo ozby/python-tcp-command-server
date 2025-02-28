@@ -11,6 +11,8 @@ from server.actions.discussions import (
 from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 from server.validation import Validator
+from server.db.entities.discussion import Discussion
+from server.db.entities.reply import Reply
 
 TEST_PEER_ID = "127.0.0.1:89899"
 

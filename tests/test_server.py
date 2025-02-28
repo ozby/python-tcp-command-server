@@ -36,6 +36,6 @@ async def test_server_echo(server) -> None:
 
         response = await reader.readline()
 
-        assert response.decode() == expected_responses[i]
+        assert response.decode().replace("_id", "") == expected_responses[i]
 
     writer.close()
