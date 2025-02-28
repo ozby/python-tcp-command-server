@@ -11,7 +11,7 @@ class NotificationType(Enum):
 @dataclass
 class Notification:
     discussion_id: str
-    recipient_id: str  # The client_id who should receive the notification
-    sender_id: str  # The client_id who created the reply
+    recipient_id: str
+    sender_id: str
     notification_type: NotificationType
     created_at: datetime

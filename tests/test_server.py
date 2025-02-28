@@ -7,20 +7,23 @@ from collections.abc import AsyncGenerator
 import pytest
 
 from server import Server
+from server.di import Container
 
 
 @pytest.fixture
-async def server() -> AsyncGenerator[Server, None]:
-    server = Server(port=0)
+async def server(container: Container) -> AsyncGenerator[Server, None]:
+    server = Server(container=container, port=0)
     task = asyncio.create_task(server.start())
     await asyncio.sleep(0.1)
-    yield server
-    await server.stop()
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        yield server
+    finally:
+        await server.stop()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 @pytest.mark.asyncio

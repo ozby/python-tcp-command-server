@@ -1,21 +1,23 @@
 import logging
+from datetime import datetime
+from typing import Any
 
-from server.db.async_mongo_client import async_mongo_client
-from server.db.entities.session import Session
-from server.services.service import singleton
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+from server.entities.session import Session
 
 
-@singleton
 class SessionService:
-    def __init__(self) -> None:
-        self.db = async_mongo_client.db
-        self.sessions = self.db.sessions
-        # Note: Motor doesn't support synchronous operations, so these need to be run in an async context
-        # These index creations should be moved to an async initialization method or startup script
+    def __init__(self, db: AsyncIOMotorDatabase[Any]) -> None:
+        self.sessions = db.sessions
 
     async def set(self, peer_id: str, user_id: str) -> None:
         logging.info(f"Setting session for {peer_id} to {user_id}")
-        session_doc = {"peer_id": peer_id, "user_id": user_id}
+        session_doc = {
+            "peer_id": peer_id,
+            "user_id": user_id,
+            "created_at": datetime.now(),
+        }
         await self.sessions.update_one(
             {"peer_id": peer_id}, {"$set": session_doc}, upsert=True
         )
