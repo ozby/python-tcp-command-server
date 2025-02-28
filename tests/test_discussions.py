@@ -1,6 +1,6 @@
-import logging
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 from server.actions.discussions import (
     CreateDiscussionAction,
@@ -8,17 +8,19 @@ from server.actions.discussions import (
     GetDiscussionAction,
     ListDiscussionAction,
 )
-from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 from server.validation import Validator
-from server.db.entities.discussion import Discussion
-from server.db.entities.reply import Reply
 
 TEST_PEER_ID = "127.0.0.1:89899"
 
 
-def test_create_discussion_validates_params():
+@pytest.fixture(autouse=True)
+def setup():
+    # Setup test users
     SessionService().set(TEST_PEER_ID, "tester_client_1")
+
+
+def test_create_discussion_validates_params():
     action = CreateDiscussionAction(
         "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
     )
@@ -149,7 +151,7 @@ def test_list_discussion_validates_params():
         [created_discussion_id, "I love this video. What did you use to make it?"],
         TEST_PEER_ID,
     )
-    replied = reply.execute()
+    reply.execute()
 
     reply = CreateReplyAction(
         "replybb",
@@ -159,7 +161,7 @@ def test_list_discussion_validates_params():
         ],
         TEST_PEER_ID,
     )
-    replied = reply.execute()
+    reply.execute()
 
     created = CreateDiscussionAction(
         "zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID
@@ -169,12 +171,12 @@ def test_list_discussion_validates_params():
     reply = CreateReplyAction(
         "replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID
     )
-    replied = reply.execute()
+    reply.execute()
 
     reply = CreateReplyAction(
         "replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID
     )
-    replied = reply.execute()
+    reply.execute()
 
 
 def test_list_discussion_executes():

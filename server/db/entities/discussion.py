@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import List
+
 from server.db.entities.reply import Reply
+
 
 @dataclass
 class Discussion:
@@ -8,4 +9,4 @@ class Discussion:
     reference_prefix: str
     reference: str
     client_id: str
-    replies: List[Reply] 
+    replies: list[Reply]

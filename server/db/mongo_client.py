@@ -1,7 +1,8 @@
 import sys
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-import pymongo
+
 import mongomock
+import pymongo
+
 from server.services.service import singleton
 
 

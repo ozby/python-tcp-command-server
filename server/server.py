@@ -19,9 +19,9 @@ class Server:
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        peerInfo = writer.get_extra_info("peername")
-        peer_str = f"{peerInfo[0]}:{peerInfo[1]}"
-        logger.info("New connection from %s", peer_str)
+        peer_info = writer.get_extra_info("peername")
+        peer_id = f"{peer_info[0]}:{peer_info[1]}"
+        logger.info("New connection from %s", peer_id)
 
         try:
             while True:
@@ -29,15 +29,15 @@ class Server:
                 if not data:
                     break
 
-                logger.info("Received %r from %s", data.decode(), peer_str)
-                parsed_command = Request.from_line(data.decode(), peer_str)
+                logger.info("Received %r from %s", data.decode(), peer_id)
+                parsed_command = Request.from_line(data.decode(), peer_id)
                 logger.info("parsed_command: %s", parsed_command)
 
                 action_man = ActionFactory.execute_action(
                     parsed_command.action,
                     parsed_command.request_id,
                     parsed_command.params,
-                    peer_str,
+                    peer_id,
                 )
                 response_from_action = action_man.execute()
                 logger.info("response: %s", response_from_action)
@@ -47,12 +47,12 @@ class Server:
 
         except Exception as e:
             writer.write(str(e).encode())
-            logger.error("Error handling client %s: %s", peer_str, e)
+            logger.error("Error handling client %s: %s", peer_id, e)
         finally:
             writer.close()
-            SessionService().delete(peer_str)
+            SessionService().delete(peer_id)
             await writer.wait_closed()
-            logger.info("Connection closed from %s", peer_str)
+            logger.info("Connection closed from %s", peer_id)
 
     async def start(self) -> None:
         self._server = await asyncio.start_server(

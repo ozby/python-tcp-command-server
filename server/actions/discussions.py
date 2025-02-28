@@ -5,8 +5,6 @@ from server.response import Response
 from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 from server.validation import Validator
-from server.db.entities.discussion import Discussion
-from server.db.entities.reply import Reply
 
 
 class CreateDiscussionAction(Action):
