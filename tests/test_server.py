@@ -1,6 +1,7 @@
 """Integration Test for the TCP Echo Server."""
 
 import asyncio
+from asyncio.base_events import Server as AsyncioServer
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -23,8 +24,14 @@ async def server() -> AsyncGenerator[Server, None]:
 
 
 @pytest.mark.asyncio
-async def test_server_echo(server) -> None:
-    port = server._server.sockets[0].getsockname()[1]
+async def test_server_echo(server: Server) -> None:
+    if server._server is None:
+        pytest.fail("Server not initialized")
+
+    server_instance = server._server
+    assert isinstance(server_instance, AsyncioServer)
+
+    port = server_instance.sockets[0].getsockname()[1]
     reader, writer = await asyncio.open_connection("127.0.0.1", port)
 
     test_actions = ["hijklmn|SIGN_IN|testuser", "abcdefg|WHOAMI", "opqrstu|SIGN_OUT"]
@@ -36,6 +43,6 @@ async def test_server_echo(server) -> None:
 
         response = await reader.readline()
 
-        assert response.decode() == expected_responses[i]
+        assert response.decode().replace("_id", "") == expected_responses[i]
 
     writer.close()

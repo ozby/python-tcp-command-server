@@ -1,133 +1,201 @@
-import logging
-import pytest
-from unittest.mock import MagicMock, patch
+from collections.abc import AsyncGenerator
+from unittest.mock import AsyncMock, patch
 
-from server.actions.discussions import CreateDiscussionAction, CreateReplyAction, GetDiscussionAction, ListDiscussionAction
-from server.services.discussion_service import DiscussionService
+import pytest
+
+from server.commands.command import CommandContext
+from server.commands.discussion_commands import (
+    CreateDiscussionCommand,
+    CreateReplyCommand,
+    GetDiscussionCommand,
+    ListDiscussionsCommand,
+)
 from server.services.session_service import SessionService
 from server.validation import Validator
 
 TEST_PEER_ID = "127.0.0.1:89899"
 
-def test_create_discussion_validates_params():
-    SessionService().set(TEST_PEER_ID, "tester_client_1")
-    action = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
-    action.validate() # Should not raise
+
+
+@pytest.fixture(autouse=True)
+async def client_id() -> AsyncGenerator[str, None]:
+    client_id = "tester_client_1"
+    await SessionService().set(TEST_PEER_ID, client_id)
+    yield client_id
+
+def test_create_discussion_validates_params() -> None:
+    context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+    CreateDiscussionCommand(
+        context
+    )  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionAction("abcdefg", [], TEST_PEER_ID).validate()
-        
-    with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionAction("abcdefg", ["ref.123"], TEST_PEER_ID).validate()
-        
-    with pytest.raises(ValueError, match="reference must be period-delimited alphanumeric"):
-        CreateDiscussionAction("abcdefg", ["invalid!", "test"], TEST_PEER_ID).validate()
+        CreateDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
 
-def test_create_discussion_executes():
+    with pytest.raises(ValueError, match="action requires two parameters"):
+        CreateDiscussionCommand(CommandContext("abcdefg", ["ref.123"], TEST_PEER_ID))
+
+    with pytest.raises(
+        ValueError, match="reference must be period-delimited alphanumeric"
+    ):
+        CreateDiscussionCommand(
+            CommandContext("abcdefg", ["invalid!", "test"], TEST_PEER_ID)
+        )
+
+
+async def test_create_discussion_executes(client_id: str) -> None:
     discussion_id = "abcdzzz"
-    with patch('server.actions.discussions.DiscussionService') as mock_service_class:
+    with patch(
+        "server.commands.discussion_commands.DiscussionService"
+    ) as mock_service_class:
         mock_service = mock_service_class.return_value
-        mock_service.create_discussion.return_value = discussion_id
-    
-        action = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID) 
-        action.discussion_service = mock_service
-        
-        result = action.execute().rstrip("\n")
+        # Create an async mock for the async create_discussion method
+        mock_service.create_discussion = AsyncMock(return_value=discussion_id)
+
+        context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+        command = CreateDiscussionCommand(context)
+        # The mock will automatically be used because we're patching at the module level
+        result = (await command.execute()).rstrip("\n")
         parts = result.split("|")
         assert len(parts) == 2
         assert parts[0] == "abcdefg"
         assert parts[1] == discussion_id
         assert Validator.validate_request_id(parts[1])
-        
-        mock_service.create_discussion.assert_called_once_with("ref.123", "test comment", SessionService().get_client_id(TEST_PEER_ID))
 
-def test_create_reply_executes():
-    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+        mock_service.create_discussion.assert_called_once_with(
+            "ref.123", "test comment", client_id
+        )
 
-    reply = CreateReplyAction("abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID)
-    replied = reply.execute()
+
+async def test_create_reply_executes() -> None:
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+    )
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
+
+    reply = CreateReplyCommand(
+        CommandContext(
+            "abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID
+        )
+    )
+    replied = await reply.execute()
     print(f"replied: {replied}")
 
-    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id], TEST_PEER_ID)
-    returned = returned_discussion.execute()
+    returned_discussion = GetDiscussionCommand(
+        CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
+    )
+    returned = await returned_discussion.execute()
     assert '"' not in returned
     print(f"returned discussion after reply: {returned}")
 
-def test_create_reply_executes_with_comma():
-    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
 
-    reply = CreateReplyAction("abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID)
-    replied = reply.execute()
+async def test_create_reply_executes_with_comma() -> None:
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+    )
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
+
+    reply = CreateReplyCommand(
+        CommandContext(
+            "abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID
+        )
+    )
+    replied = await reply.execute()
     print(f"replied: {replied}")
 
-    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id], TEST_PEER_ID)
-    returned = returned_discussion.execute()
+    returned_discussion = GetDiscussionCommand(
+        CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
+    )
+    returned = await returned_discussion.execute()
     assert '"' in returned
     print(f"returned discussion after reply: {returned}")
 
-def test_get_discussion_executes():
-    created = CreateDiscussionAction("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+
+async def test_get_discussion_executes(client_id: str) -> None:
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
+    )
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
     print(f"created_discussion_id: {created_discussion_id}")
 
-    returned_discussion = GetDiscussionAction("abcdefg", [created_discussion_id], TEST_PEER_ID)
-    returned = returned_discussion.execute()
-    assert returned == f"abcdefg|{created_discussion_id}|ref.123|({SessionService().get_client_id(TEST_PEER_ID)}|test comment)\n"
+    returned_discussion = GetDiscussionCommand(
+        CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
+    )
+    returned = await returned_discussion.execute()
+    assert (
+        returned
+        == f"abcdefg|{created_discussion_id}|ref.123|({client_id}|test comment)\n"
+    )
 
 
-def test_create_reply_validates_params():
-    action = CreateReplyAction("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
-    action.validate() # Should not raise
-    
+def test_create_reply_validates_params() -> None:
+    context = CommandContext("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
+    CreateReplyCommand(context)  # Should not raise - validation in __init__
+
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyAction("abcdefg", [], TEST_PEER_ID).validate()
-        
+        CreateReplyCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
+
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyAction("abcdefg", ["disc123"], TEST_PEER_ID).validate()
-
-def test_get_discussion_validates_params():
-    action = GetDiscussionAction("abcdefg", ["disc123"])
-    action.validate() # Should not raise
-    
-    with pytest.raises(ValueError, match="action requires one parameters"):
-        GetDiscussionAction("abcdefg", []).validate()
-        
-    with pytest.raises(ValueError, match="action requires one parameters"):
-        GetDiscussionAction("abcdefg", ["disc123", "extra"]).validate()
+        CreateReplyCommand(CommandContext("abcdefg", ["disc123"], TEST_PEER_ID))
 
 
+def test_get_discussion_validates_params() -> None:
+    context = CommandContext("abcdefg", ["disc123"], TEST_PEER_ID)
+    GetDiscussionCommand(context)  # Should not raise - validation in __init__
 
-def test_list_discussion_validates_params():
-    created = CreateDiscussionAction("abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID)
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    with pytest.raises(ValueError, match="action requires one parameter"):
+        GetDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
 
-    reply = CreateReplyAction("replyaa", [created_discussion_id, "I love this video. What did you use to make it?"], TEST_PEER_ID)
-    replied = reply.execute()
-    
-    reply = CreateReplyAction("replybb", [created_discussion_id, "I used something called \"Synthesia\", it's pretty cool!"], TEST_PEER_ID)
-    replied = reply.execute()
-
-    created = CreateDiscussionAction("zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID)
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
-    
-    reply = CreateReplyAction("replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID)
-    replied = reply.execute()
-    
-    reply = CreateReplyAction("replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID)
-    replied = reply.execute()
+    with pytest.raises(ValueError, match="action requires one parameter"):
+        GetDiscussionCommand(
+            CommandContext("abcdefg", ["disc123", "extra"], TEST_PEER_ID)
+        )
 
 
-def test_list_discussion_executes():
-    action = ListDiscussionAction("abcdefg", [])
-    result = action.execute()
+async def test_list_discussion_validates_params() -> None:
+    created = CreateDiscussionCommand(
+        CommandContext("abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID)
+    )
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
+
+    reply = CreateReplyCommand(
+        CommandContext(
+            "replyaa",
+            [created_discussion_id, "I love this video. What did you use to make it?"],
+            TEST_PEER_ID,
+        )
+    )
+    await reply.execute()
+
+    reply = CreateReplyCommand(
+        CommandContext(
+            "replybb",
+            [
+                created_discussion_id,
+                'I used something called "Synthesia", it\'s pretty cool!',
+            ],
+            TEST_PEER_ID,
+        )
+    )
+    await reply.execute()
+
+    created = CreateDiscussionCommand(
+        CommandContext("zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID)
+    )
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
+
+    reply = CreateReplyCommand(
+        CommandContext("replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID)
+    )
+    await reply.execute()
+
+    reply = CreateReplyCommand(
+        CommandContext("replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID)
+    )
+    await reply.execute()
+
+
+async def test_list_discussion_executes() -> None:
+    command = ListDiscussionsCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
+    result = await command.execute()
     print(f"result: {result}")
-    # create = CreateDiscussionAction("ozbydee", ["ref.123", "test comment"])
-    # assert create.execute() == 'ozbydee|dizcuid\n'
-
-
-    # # action = GetDiscussionAction("request", ["abcdzzz"])
-    # action = ListDiscussionAction("request")
-    # result = action.execute()
-    # assert result == "request|abcdzzz\n"
