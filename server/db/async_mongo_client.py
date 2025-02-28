@@ -1,8 +1,8 @@
 import sys
 from typing import Any
 
+from mongomock_motor import AsyncMongoMockClient, AsyncMongoMockDatabase  # type: ignore
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from mongomock_motor import AsyncMongoMockClient, AsyncMongoMockDatabase
 
 from server.services.service import singleton
 

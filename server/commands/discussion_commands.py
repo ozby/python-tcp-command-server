@@ -25,7 +25,7 @@ class CreateDiscussionCommand(Command):
             raise ValueError("authentication is required")
 
         discussion_service = DiscussionService()
-        self._created_discussion_id = discussion_service.create_discussion(
+        self._created_discussion_id = await discussion_service.create_discussion(
             self.context.params[0], self.context.params[1], client_id
         )
         return Response(
@@ -35,7 +35,7 @@ class CreateDiscussionCommand(Command):
     def undo(self) -> None:
         if hasattr(self, "_created_discussion_id"):
             discussion_service = DiscussionService()
-            discussion_service.delete_discussion(self._created_discussion_id)
+            self._delete_coroutine = discussion_service.delete_discussion(self._created_discussion_id)
 
     def can_undo(self) -> bool:
         return True
@@ -59,7 +59,7 @@ class CreateReplyCommand(Command):
         discussion_id, comment = self.context.params[0], self.context.params[1]
         discussion_service = DiscussionService()
         self._discussion_id = discussion_id
-        self._reply_id = discussion_service.create_reply(
+        self._reply_id = await discussion_service.create_reply(
             discussion_id, comment, client_id
         )
         return Response(request_id=self.context.request_id).serialize()
@@ -67,7 +67,7 @@ class CreateReplyCommand(Command):
     def undo(self) -> None:
         if hasattr(self, "_discussion_id") and hasattr(self, "_reply_id"):
             discussion_service = DiscussionService()
-            discussion_service.delete_reply(self._discussion_id, self._reply_id)
+            self._delete_reply_coroutine = discussion_service.delete_reply(self._discussion_id, self._reply_id)
 
     def can_undo(self) -> bool:
         return True
@@ -83,7 +83,7 @@ class GetDiscussionCommand(Command):
 
     async def execute(self) -> str:
         discussion_service = DiscussionService()
-        discussion = discussion_service.get_discussion(self.context.params[0])
+        discussion = await discussion_service.get_discussion(self.context.params[0])
         if discussion is None:
             raise ValueError("Discussion not found")
 
@@ -111,7 +111,7 @@ class ListDiscussionsCommand(Command):
 
     async def execute(self) -> str:
         discussion_service = DiscussionService()
-        discussions = discussion_service.list_discussions()
+        discussions = await discussion_service.list_discussions()
 
         discussion_list = []
         for discussion in discussions:

@@ -16,6 +16,7 @@ class Command(ABC):
         # if they need async validation
         self.validate_sync()
     
+    @abstractmethod
     def validate_sync(self) -> None:
         """Synchronous validation that can be called from __init__
         Derived classes with async validation should override this to do basic checks

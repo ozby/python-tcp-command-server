@@ -1,7 +1,7 @@
 import logging
 
-from server.db.entities.session import Session
 from server.db.async_mongo_client import async_mongo_client
+from server.db.entities.session import Session
 from server.services.service import singleton
 
 

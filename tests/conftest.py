@@ -1,10 +1,10 @@
 import pytest
 
-from server.db.mongo_client import mongo_client
+from server.db.async_mongo_client import async_mongo_client
 
 
 @pytest.fixture(autouse=True)
-def mock_mongo() -> None:
-    mongo_client.db.discussions.delete_many({})
-    mongo_client.db.notifications.delete_many({})
-    mongo_client.db.sessions.delete_many({})
+async def mock_mongo() -> None:
+    await async_mongo_client.db.discussions.delete_many({})
+    await async_mongo_client.db.notifications.delete_many({})
+    await async_mongo_client.db.sessions.delete_many({})

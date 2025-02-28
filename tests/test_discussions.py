@@ -1,5 +1,5 @@
-from typing import AsyncGenerator
-from unittest.mock import patch
+from collections.abc import AsyncGenerator
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -49,7 +49,8 @@ async def test_create_discussion_executes(client_id: str) -> None:
         "server.commands.discussion_commands.DiscussionService"
     ) as mock_service_class:
         mock_service = mock_service_class.return_value
-        mock_service.create_discussion.return_value = discussion_id
+        # Create an async mock for the async create_discussion method
+        mock_service.create_discussion = AsyncMock(return_value=discussion_id)
 
         context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
         command = CreateDiscussionCommand(context)

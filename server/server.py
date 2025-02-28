@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from typing import Any
 
 import motor.motor_asyncio
 
@@ -17,7 +18,7 @@ class Server:
         self.host = host
         self.port = port
         self._server: asyncio.AbstractServer | None = None
-        self._notification_task: asyncio.Task | None = None
+        self._notification_task: asyncio.Task[None] | None = None
         self._peer_writers: dict[str, asyncio.StreamWriter] = {}
         self._running = False
 
@@ -25,7 +26,7 @@ class Server:
         """Single watcher for all notifications"""
         try:
             logger.info("Starting notification watcher")
-            client = motor.motor_asyncio.AsyncIOMotorClient(
+            client: motor.motor_asyncio.AsyncIOMotorClient[dict[str, Any]] = motor.motor_asyncio.AsyncIOMotorClient(
                 "mongodb://localhost:27017/?replicaSet=rs0"
             )
             collection = client.synthesia_db.notifications
@@ -44,17 +45,20 @@ class Server:
                         logger.info("Received notification: %s", notification)
                         recipient_id = notification["recipient_id"]
                         peer_id = await SessionService().get_by_user_id(recipient_id)
-                        peer_writer = self._peer_writers.get(peer_id)
-                        if peer_writer is None:
-                            logger.info(f"User is offline: {peer_id}")
-                            continue
-                        message = (
-                            f"DISCUSSION_UPDATED|{notification['discussion_id']}\n"
-                        )
-                        logger.info(f"Notification sending to {peer_id}: {message}")
-                        peer_writer.write(message.encode())
-                        logger.info(f"Notification sent to {peer_id}")
-                        await peer_writer.drain()
+                        if peer_id is not None:
+                            peer_writer = self._peer_writers.get(peer_id)
+                            if peer_writer is None:
+                                logger.info(f"User is offline: {peer_id}")
+                                continue
+                            message = (
+                                f"DISCUSSION_UPDATED|{notification['discussion_id']}\n"
+                            )
+                            logger.info(f"Notification sending to {peer_id}: {message}")
+                            peer_writer.write(message.encode())
+                            logger.info(f"Notification sent to {peer_id}")
+                            await peer_writer.drain()
+                        else:
+                            logger.info(f"No peer ID found for user: {recipient_id}")
                     except Exception as e:
                         if not self._running:
                             break
