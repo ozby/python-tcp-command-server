@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     MONGODB_URL: str = "mongodb://localhost:27017/?replicaSet=rs0"
     SERVER_HOST: str = "0.0.0.0"
@@ -8,4 +9,5 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
-settings = Settings() 
+
+settings = Settings()

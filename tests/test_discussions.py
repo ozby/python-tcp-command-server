@@ -2,13 +2,13 @@ from unittest.mock import patch
 
 import pytest
 
+from server.commands.command import CommandContext
 from server.commands.discussion_commands import (
     CreateDiscussionCommand,
     CreateReplyCommand,
     GetDiscussionCommand,
     ListDiscussionsCommand,
 )
-from server.commands.command import CommandContext
 from server.services.session_service import SessionService
 from server.validation import Validator
 
@@ -23,7 +23,9 @@ def setup() -> None:
 
 def test_create_discussion_validates_params() -> None:
     context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
-    command = CreateDiscussionCommand(context)  # Should not raise - validation in __init__
+    CreateDiscussionCommand(
+        context
+    )  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
         CreateDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
@@ -34,12 +36,16 @@ def test_create_discussion_validates_params() -> None:
     with pytest.raises(
         ValueError, match="reference must be period-delimited alphanumeric"
     ):
-        CreateDiscussionCommand(CommandContext("abcdefg", ["invalid!", "test"], TEST_PEER_ID))
+        CreateDiscussionCommand(
+            CommandContext("abcdefg", ["invalid!", "test"], TEST_PEER_ID)
+        )
 
 
 def test_create_discussion_executes() -> None:
     discussion_id = "abcdzzz"
-    with patch("server.commands.discussion_commands.DiscussionService") as mock_service_class:
+    with patch(
+        "server.commands.discussion_commands.DiscussionService"
+    ) as mock_service_class:
         mock_service = mock_service_class.return_value
         mock_service.create_discussion.return_value = discussion_id
 
@@ -65,7 +71,9 @@ def test_create_reply_executes() -> None:
     created_discussion_id = created.execute().strip("\n").split("|")[1]
 
     reply = CreateReplyCommand(
-        CommandContext("abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID)
+        CommandContext(
+            "abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID
+        )
     )
     replied = reply.execute()
     print(f"replied: {replied}")
@@ -85,7 +93,9 @@ def test_create_reply_executes_with_comma() -> None:
     created_discussion_id = created.execute().strip("\n").split("|")[1]
 
     reply = CreateReplyCommand(
-        CommandContext("abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID)
+        CommandContext(
+            "abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID
+        )
     )
     replied = reply.execute()
     print(f"replied: {replied}")
@@ -117,7 +127,7 @@ def test_get_discussion_executes() -> None:
 
 def test_create_reply_validates_params() -> None:
     context = CommandContext("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
-    command = CreateReplyCommand(context)  # Should not raise - validation in __init__
+    CreateReplyCommand(context)  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
         CreateReplyCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
@@ -128,7 +138,7 @@ def test_create_reply_validates_params() -> None:
 
 def test_get_discussion_validates_params() -> None:
     context = CommandContext("abcdefg", ["disc123"], TEST_PEER_ID)
-    command = GetDiscussionCommand(context)  # Should not raise - validation in __init__
+    GetDiscussionCommand(context)  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires one parameter"):
         GetDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID))

@@ -1,7 +1,7 @@
 import random
 import re
 import string
-from typing import Dict, Any
+from typing import Any
 
 from server.db.entities.discussion import Discussion
 from server.db.entities.reply import Reply
@@ -27,7 +27,7 @@ class DiscussionService:
             return f'"{escaped_comment}"'
         return comment
 
-    def _get_unique_participants(self, discussion_doc: Dict[str, Any]) -> set[str]:
+    def _get_unique_participants(self, discussion_doc: dict[str, Any]) -> set[str]:
         """Get unique client_ids from a discussion's replies"""
         participants = {discussion_doc["client_id"]}  # Include discussion creator
         for reply in discussion_doc["replies"]:

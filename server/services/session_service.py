@@ -36,7 +36,7 @@ class SessionService:
             return None
         session = Session(**session_doc)
         return session.peer_id
-    
+
     def get_session(self, peer_id: str | None) -> Session | None:
         if peer_id is None:
             return None

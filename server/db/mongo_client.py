@@ -17,9 +17,7 @@ class MongoClient:
         if "pytest" in sys.modules:
             self.client = mongomock.MongoClient()
         else:
-            self.client = pymongo.MongoClient(
-                "mongodb://localhost:27017"
-            )
+            self.client = pymongo.MongoClient("mongodb://localhost:27017")
         self.db: Database[dict[str, Any]] = self.client.synthesia_db
 
     @property
