@@ -3,8 +3,7 @@ import re
 import string
 from typing import Any
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
-
+from motor.motor_asyncio import AsyncIOMotorClient
 from server.db.entities.discussion import Discussion
 from server.db.entities.reply import Reply
 from server.services.notification_service import NotificationService
@@ -14,27 +13,24 @@ class DiscussionService:
     MENTION_PATTERN = re.compile(r"(?<!@)@(\w+)(?=[\s,.!?]|$)")
 
     def __init__(
-        self, db: AsyncIOMotorDatabase[Any], notification_service: NotificationService
+        self, mongo_client: AsyncIOMotorClient, notification_service: NotificationService
     ) -> None:
-        self.db = db
+        self.db = mongo_client.synthesia_db
         self.discussions = self.db.discussions
         self.notification_service = notification_service
 
     def _sanitize_comment(self, comment: str) -> str:
         if "," in comment:
-            escaped_comment = comment.replace('"', '""')
-            return f'"{escaped_comment}"'
+            return f'"{comment.replace('"', '""')}"'
         return comment
 
     def _get_unique_participants(self, discussion_doc: dict[str, Any]) -> set[str]:
-        """Get unique client_ids from a discussion's replies"""
         participants = {discussion_doc["client_id"]}
         for reply in discussion_doc["replies"]:
             participants.add(reply["client_id"])
         return participants
 
     def _extract_mentions(self, comment: str) -> set[str]:
-        """Extract mentioned client_ids from a comment"""
         return set(self.MENTION_PATTERN.findall(comment))
 
     async def create_discussion(
@@ -104,6 +100,10 @@ class DiscussionService:
             {"discussion_id": discussion_id}, {"_id": 0}
         )
         if not discussion_doc:
+            print(f"Discussion not found. All discussions:")
+            all_discussions = await self.discussions.find({}, {"_id": 0}).to_list(None)
+            for doc in all_discussions:
+                print(f"xxx  {doc['discussion_id']}: {doc['reference']}")
             raise ValueError(f"Discussion {discussion_id} not found")
 
         return Discussion(
@@ -118,9 +118,7 @@ class DiscussionService:
         self, reference_prefix: str | None = None
     ) -> list[Discussion]:
         query = {"reference_prefix": reference_prefix} if reference_prefix else {}
-        discussion_docs = await self.discussions.find(query, {"_id": 0}).to_list(
-            length=None
-        )
+        discussion_docs = await self.discussions.find(query, {"_id": 0}).to_list(None)
 
         return [
             Discussion(

@@ -18,18 +18,13 @@ TEST_PEER_ID = "127.0.0.1:89899"
 
 
 @pytest.fixture(autouse=True)
-async def client_id() -> AsyncGenerator[str, None]:
+async def client_id(session_service: SessionService) -> AsyncGenerator[str, None]:
     client_id = "tester_client_1"
-    await SessionService().set(TEST_PEER_ID, client_id)
+    await session_service.set(TEST_PEER_ID, client_id)
     yield client_id
 
 
-@pytest.fixture
-def session_service() -> SessionService:
-    return SessionService()
-
-
-def test_create_discussion_validates_params(
+async def test_create_discussion_validates_params(
     discussion_service: DiscussionService, session_service: SessionService
 ) -> None:
     context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
@@ -38,27 +33,27 @@ def test_create_discussion_validates_params(
     )  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionCommand(
+        await CreateDiscussionCommand(
             CommandContext("abcdefg", [], TEST_PEER_ID),
             discussion_service,
             session_service,
-        )
+        ).execute()
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionCommand(
+        await CreateDiscussionCommand(
             CommandContext("abcdefg", ["ref.123"], TEST_PEER_ID),
             discussion_service,
             session_service,
-        )
+        ).execute()
 
     with pytest.raises(
         ValueError, match="reference must be period-delimited alphanumeric"
     ):
-        CreateDiscussionCommand(
+        await CreateDiscussionCommand(
             CommandContext("abcdefg", ["ref,123", "test comment"], TEST_PEER_ID),
             discussion_service,
             session_service,
-        )
+        ).execute()
 
 
 async def test_create_discussion_executes(
@@ -174,45 +169,45 @@ async def test_get_discussion_executes(
     )
 
 
-def test_create_reply_validates_params(
+async def test_create_reply_validates_params(
     discussion_service: DiscussionService, session_service: SessionService
 ) -> None:
     context = CommandContext("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
-    CreateReplyCommand(
+    await CreateReplyCommand(
         context, discussion_service, session_service
-    )  # Should not raise - validation in __init__
+    ).execute()
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyCommand(
+        await CreateReplyCommand(
             CommandContext("abcdefg", [], TEST_PEER_ID),
             discussion_service,
             session_service,
-        )
+        ).execute()
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyCommand(
+        await CreateReplyCommand(
             CommandContext("abcdefg", ["disc123"], TEST_PEER_ID),
             discussion_service,
             session_service,
-        )
+        ).execute()
 
 
-def test_get_discussion_validates_params(discussion_service: DiscussionService) -> None:
+async def test_get_discussion_validates_params(discussion_service: DiscussionService) -> None:
     context = CommandContext("abcdefg", ["disc123"], TEST_PEER_ID)
-    GetDiscussionCommand(
+    await GetDiscussionCommand(
         context, discussion_service
-    )  # Should not raise - validation in __init__
+    ).execute()
 
     with pytest.raises(ValueError, match="action requires one parameter"):
-        GetDiscussionCommand(
+        await GetDiscussionCommand(
             CommandContext("abcdefg", [], TEST_PEER_ID), discussion_service
-        )
+        ).execute()
 
     with pytest.raises(ValueError, match="action requires one parameter"):
-        GetDiscussionCommand(
+        await GetDiscussionCommand(
             CommandContext("abcdefg", ["disc123", "extra"], TEST_PEER_ID),
             discussion_service,
-        )
+        ).execute()
 
 
 async def test_list_discussion_validates_params(

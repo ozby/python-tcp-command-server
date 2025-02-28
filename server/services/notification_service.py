@@ -1,21 +1,19 @@
 import logging
 from datetime import datetime
-from typing import Any
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from server.db.entities.notification import Notification, NotificationType
 
 
 class NotificationService:
-    def __init__(self, db: AsyncIOMotorDatabase[Any]) -> None:
-        self.db = db
+    def __init__(self, mongo_client: AsyncIOMotorClient) -> None:
+        self.db = mongo_client.synthesia_db
         self.notifications = self.db.notifications
 
     async def create_reply_notifications(
         self, discussion_id: str, sender_id: str, recipient_ids: list[str]
     ) -> None:
-        """Create reply notifications for all recipients except the sender"""
         if not recipient_ids:
             return
 
@@ -28,7 +26,7 @@ class NotificationService:
                 "created_at": datetime.now(),
             }
             for recipient_id in recipient_ids
-            if recipient_id != sender_id  # Don't notify the sender
+            if recipient_id != sender_id
         ]
 
         if notifications:
@@ -40,7 +38,6 @@ class NotificationService:
     async def create_mention_notifications(
         self, discussion_id: str, sender_id: str, mentioned_ids: list[str]
     ) -> None:
-        """Create mention notifications for all mentioned users except the sender"""
         if not mentioned_ids:
             return
 
@@ -63,7 +60,6 @@ class NotificationService:
             )
 
     async def get_notifications(self, recipient_id: str) -> list[Notification]:
-        """Get all notifications for a recipient"""
         notification_docs = (
             await self.notifications.find({"recipient_id": recipient_id}, {"_id": 0})
             .sort("created_at", -1)
@@ -71,17 +67,11 @@ class NotificationService:
         )
 
         return [
-            Notification(
-                **{
-                    **doc,
-                    "notification_type": NotificationType(doc["notification_type"]),
-                }
-            )
+            Notification(**{**doc, "notification_type": NotificationType(doc["notification_type"])})
             for doc in notification_docs
         ]
 
     async def mark_as_read(self, recipient_id: str, discussion_id: str) -> None:
-        """Mark notifications as read for a specific discussion"""
         await self.notifications.delete_many(
             {"recipient_id": recipient_id, "discussion_id": discussion_id}
         )

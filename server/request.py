@@ -38,6 +38,22 @@ class Request:
         params = parts[2:] if len(parts) >= MIN_PART else []
         logging.info(f"params: {params}")
 
-        CommandFactory.create_command(action, request_id, params, peer_id)
-
+        if action not in CommandFactory._commands:
+            raise ValueError(f"Unknown action: {action}")
+        
+        if action == "SIGN_IN":
+            if len(params) != 1 or not Validator.validate_client_id(params[0]):
+                raise ValueError("SIGN_IN requires exactly one alphanumeric parameter")
+        elif action == "CREATE_DISCUSSION":
+            if len(params) != 2:
+                raise ValueError("CREATE_DISCUSSION requires exactly two parameters")
+            if not Validator.validate_reference(params[0]):
+                raise ValueError("reference must be period-delimited alphanumeric")
+        elif action == "CREATE_REPLY":
+            if len(params) != 2:
+                raise ValueError("CREATE_REPLY requires exactly two parameters")
+        elif action == "GET_DISCUSSION":
+            if len(params) != 1:
+                raise ValueError("GET_DISCUSSION requires exactly one parameter")
+        
         return Request(request_id, action, params, peer_id)

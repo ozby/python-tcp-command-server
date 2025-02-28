@@ -4,23 +4,24 @@ import pytest
 from dependency_injector import containers, providers
 from mongomock_motor import AsyncMongoMockClient  # type: ignore
 
+from server.db.async_mongo_client import AsyncMongoClient
 from server.di import container as app_container
 from server.services.discussion_service import DiscussionService
 from server.services.notification_service import NotificationService
+from server.services.session_service import SessionService
 
 
 class TestContainer(containers.DeclarativeContainer):
-    mongo_client: providers.Provider[AsyncMongoMockClient] = providers.Singleton(
-        AsyncMongoMockClient
+    mongo_client: providers.Provider[AsyncMongoClient] = providers.Singleton(
+        AsyncMongoClient
     )
 
-    db = providers.Singleton(lambda client: client.synthesia_db, mongo_client)
-
-    notification_service = providers.Singleton(NotificationService, db=db)
+    notification_service = providers.Singleton(NotificationService, mongo_client=mongo_client)
 
     discussion_service = providers.Singleton(
-        DiscussionService, db=db, notification_service=notification_service
+        DiscussionService,  mongo_client=mongo_client, notification_service=notification_service
     )
+    session_service = providers.Singleton(SessionService, mongo_client=mongo_client)
 
 
 @pytest.fixture(scope="session")
@@ -30,17 +31,16 @@ def container() -> Generator[TestContainer, None, None]:
 
     # Override the application container's providers with test providers
     app_container.mongo_client.override(test_container.mongo_client)
-    app_container.db.override(test_container.db)
     app_container.notification_service.override(test_container.notification_service)
     app_container.discussion_service.override(test_container.discussion_service)
-
+    app_container.session_service.override(test_container.session_service)
     yield test_container
 
     # Reset overrides after tests
     app_container.mongo_client.reset_override()
-    app_container.db.reset_override()
     app_container.notification_service.reset_override()
     app_container.discussion_service.reset_override()
+    app_container.session_service.reset_override()
 
 
 @pytest.fixture
@@ -53,9 +53,15 @@ def notification_service(container: TestContainer) -> NotificationService:
     return container.notification_service()
 
 
+@pytest.fixture
+def session_service(container: TestContainer) -> SessionService:
+    return container.session_service()
+
+
 @pytest.fixture(autouse=True)
 async def mock_mongo(container: TestContainer) -> None:
-    db = container.db()
+    # Clear collections before each test
+    db = container.mongo_client().synthesia_db
     await db.discussions.delete_many({})
     await db.notifications.delete_many({})
     await db.sessions.delete_many({})

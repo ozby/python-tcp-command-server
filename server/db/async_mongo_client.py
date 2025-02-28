@@ -22,6 +22,3 @@ class AsyncMongoClient:
     def close(self) -> None:
         """Close the MongoDB connection"""
         self.client.close()
-
-
-async_mongo_client = AsyncMongoClient()

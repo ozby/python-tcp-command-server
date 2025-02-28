@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class Server:
     def __init__(
         self,
-        container: Container | None = None,
+        container: Container,
         host: str = "0.0.0.0",
         port: int = 8989,
     ) -> None:
@@ -26,7 +26,7 @@ class Server:
 
         from server import get_container
 
-        self.container = container or get_container()
+        self.container = container
         self.session_service = self.container.session_service()
 
     async def _watch_notifications(self) -> None:
@@ -144,7 +144,14 @@ class Server:
         if self._server:
             self._server.close()
             await self._server.wait_closed()
-
+        
+        if self._notification_task:
+            self._notification_task.cancel()
+            
+        for _, writer in list(self._peer_writers.items()):
+            writer.close()
+            
+        self._peer_writers.clear()
         logger.info("Server stopped")
 
 

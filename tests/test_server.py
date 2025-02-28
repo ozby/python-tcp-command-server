@@ -44,7 +44,7 @@ async def test_server_echo(server: Server) -> None:
         await writer.drain()
 
         response = await reader.readline()
-
+        print(f"aaaa response: {response}")  
         assert response.decode().replace("_id", "") == expected_responses[i]
 
     writer.close()
