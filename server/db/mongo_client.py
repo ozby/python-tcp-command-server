@@ -18,7 +18,7 @@ class MongoClient:
             self.client = mongomock.MongoClient()
         else:
             self.client = pymongo.MongoClient(
-                "mongodb://admin:password@localhost:27017/admin"
+                "mongodb://localhost:27017"
             )
         self.db: Database[dict[str, Any]] = self.client.synthesia_db
 

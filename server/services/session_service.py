@@ -28,6 +28,15 @@ class SessionService:
         session = Session(**session_doc)
         return session.user_id
 
+    def get_by_user_id(self, user_id: str | None) -> str | None:
+        if user_id is None:
+            return None
+        session_doc = self.sessions.find_one({"user_id": user_id}, {"_id": 0})
+        if not session_doc:
+            return None
+        session = Session(**session_doc)
+        return session.peer_id
+    
     def get_session(self, peer_id: str | None) -> Session | None:
         if peer_id is None:
             return None

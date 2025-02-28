@@ -1,45 +1,36 @@
 services:
-  mongodb:
-    image: mongodb/mongodb-community-server:7.0-ubi8
-    platform: linux/arm64/v8  # Specific for M2 Mac
-    container_name: mongodb
-    environment:
-      - MONGODB_INITDB_ROOT_USERNAME=admin
-      - MONGODB_INITDB_ROOT_PASSWORD=password
+  mongo1:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - mongo_network
+      - 27017:27017
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
+    volumes:
+      - "mongo1_data:/data/db"
+      - "mongo1_config:/data/configdb"
 
   mongo-express:
     image: mongo-express:latest
     platform: linux/arm64/v8  # Specific for M2 Mac
     container_name: mongo-express
     environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
-      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_SERVER=mongo1
       - ME_CONFIG_BASICAUTH_USERNAME=admin
       - ME_CONFIG_BASICAUTH_PASSWORD=password
     ports:
       - "8081:8081"
-    networks:
-      - mongo_network
     depends_on:
-      mongodb:
+      mongo1:
         condition: service_healthy
 
-networks:
-  mongo_network:
-    driver: bridge
-
 volumes:
-  mongodb_data:
-    driver: local 
+  mongo1_data:
+  mongo1_config:
