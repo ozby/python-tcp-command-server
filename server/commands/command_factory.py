@@ -1,5 +1,6 @@
-from typing import ClassVar
+from typing import ClassVar, Type, Union, cast
 
+from server import get_container
 from server.commands.auth_commands import (
     SignInCommand,
     SignOutCommand,
@@ -15,7 +16,7 @@ from server.commands.discussion_commands import (
 
 
 class CommandFactory:
-    _commands: ClassVar[dict[str, type[Command]]] = {
+    _commands: ClassVar[dict[str, Type[Command]]] = {
         "SIGN_IN": SignInCommand,
         "SIGN_OUT": SignOutCommand,
         "WHOAMI": WhoAmICommand,
@@ -39,8 +40,26 @@ class CommandFactory:
             raise ValueError(f"Unknown action: {action}")
 
         context = CommandContext(request_id=request_id, params=params, peer_id=peer_id)
-
-        command = cls._commands[action](context)
+        
+        command_class = cls._commands[action]
+        
+        if command_class in (CreateDiscussionCommand, CreateReplyCommand, 
+                            GetDiscussionCommand, ListDiscussionsCommand):
+            discussion_service = get_container().discussion_service()
+            
+            if command_class == CreateDiscussionCommand:
+                command = cast(Command, CreateDiscussionCommand(context, discussion_service))
+            elif command_class == CreateReplyCommand:
+                command = cast(Command, CreateReplyCommand(context, discussion_service))
+            elif command_class == GetDiscussionCommand:
+                command = cast(Command, GetDiscussionCommand(context, discussion_service))
+            elif command_class == ListDiscussionsCommand:
+                command = cast(Command, ListDiscussionsCommand(context, discussion_service))
+            else:
+                raise RuntimeError("Unexpected command class")
+        else:
+            command = command_class(context)
+            
         cls._command_history.append(command)
         return command
 

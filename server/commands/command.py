@@ -12,8 +12,6 @@ class CommandContext:
 class Command(ABC):
     def __init__(self, context: CommandContext):
         self.context = context
-        # Call synchronous validation - child classes should override this
-        # if they need async validation
         self.validate_sync()
     
     @abstractmethod
@@ -32,12 +30,3 @@ class Command(ABC):
     async def execute(self) -> str:
         """Execute the command and return the result"""
         pass
-
-    @abstractmethod
-    def undo(self) -> None:
-        """Undo the command execution if supported"""
-        pass
-
-    def can_undo(self) -> bool:
-        """Return whether this command supports undo operation"""
-        return False

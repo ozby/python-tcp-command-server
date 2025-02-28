@@ -2,16 +2,12 @@ import logging
 
 from server.db.async_mongo_client import async_mongo_client
 from server.db.entities.session import Session
-from server.services.service import singleton
 
 
-@singleton
 class SessionService:
     def __init__(self) -> None:
         self.db = async_mongo_client.db
         self.sessions = self.db.sessions
-        # Note: Motor doesn't support synchronous operations, so these need to be run in an async context
-        # These index creations should be moved to an async initialization method or startup script
 
     async def set(self, peer_id: str, user_id: str) -> None:
         logging.info(f"Setting session for {peer_id} to {user_id}")

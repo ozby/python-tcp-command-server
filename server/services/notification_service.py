@@ -1,17 +1,16 @@
 import logging
 from datetime import datetime
+from typing import Any
 
-from server.db.async_mongo_client import async_mongo_client
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from server.db.entities.notification import Notification, NotificationType
-from server.services.service import singleton
 
 
-@singleton
 class NotificationService:
-    def __init__(self) -> None:
-        self.db = async_mongo_client.db
+    def __init__(self, db: AsyncIOMotorDatabase[Any]) -> None:
+        self.db = db
         self.notifications = self.db.notifications
-        # Note: Motor handles indexes automatically, but we should use create_indexes in an async init method
 
     async def create_reply_notifications(
         self, discussion_id: str, sender_id: str, recipient_ids: list[str]

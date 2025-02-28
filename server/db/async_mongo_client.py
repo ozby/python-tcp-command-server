@@ -4,10 +4,7 @@ from typing import Any
 from mongomock_motor import AsyncMongoMockClient, AsyncMongoMockDatabase  # type: ignore
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from server.services.service import singleton
 
-
-@singleton
 class AsyncMongoClient:
     def __init__(self) -> None:
         self.client: (

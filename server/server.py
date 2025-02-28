@@ -2,11 +2,12 @@
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import motor.motor_asyncio
 
 from server.commands.command_factory import CommandFactory
+from server.di import Container
 from server.request import Request
 from server.services.session_service import SessionService
 
@@ -14,22 +15,24 @@ logger = logging.getLogger(__name__)
 
 
 class Server:
-    def __init__(self, host: str = "0.0.0.0", port: int = 8989) -> None:
+    def __init__(self, container: Optional[Container] = None, host: str = "0.0.0.0", port: int = 8989) -> None:
         self.host = host
         self.port = port
         self._server: asyncio.AbstractServer | None = None
         self._notification_task: asyncio.Task[None] | None = None
         self._peer_writers: dict[str, asyncio.StreamWriter] = {}
         self._running = False
+        
+        from server import get_container
+        self.container = container or get_container()
 
     async def _watch_notifications(self) -> None:
         """Single watcher for all notifications"""
         try:
             logger.info("Starting notification watcher")
-            client: motor.motor_asyncio.AsyncIOMotorClient[dict[str, Any]] = motor.motor_asyncio.AsyncIOMotorClient(
-                "mongodb://localhost:27017/?replicaSet=rs0"
-            )
-            collection = client.synthesia_db.notifications
+            client = self.container.mongo_client()
+            db_name = str(self.container.config['db_name'])
+            collection = client[db_name].notifications
             async with collection.watch(
                 [{"$match": {"operationType": "insert"}}]
             ) as stream:
@@ -37,14 +40,14 @@ class Server:
                     try:
                         change = await stream.try_next()
                         if change is None:
-                            # No new changes, wait a bit before trying again
                             await asyncio.sleep(0.1)
                             continue
 
                         notification = change["fullDocument"]
                         logger.info("Received notification: %s", notification)
                         recipient_id = notification["recipient_id"]
-                        peer_id = await SessionService().get_by_user_id(recipient_id)
+                        session_service = SessionService()
+                        peer_id = await session_service.get_by_user_id(recipient_id)
                         if peer_id is not None:
                             peer_writer = self._peer_writers.get(peer_id)
                             if peer_writer is None:
@@ -63,7 +66,7 @@ class Server:
                         if not self._running:
                             break
                         logger.error(f"Error processing notification: {e}")
-                        await asyncio.sleep(1)  # Wait before retrying
+                        await asyncio.sleep(1)
         except Exception as e:
             if self._running:
                 logger.error(f"Notification watcher error: {e}")
@@ -127,12 +130,10 @@ class Server:
         logger.info("Stopping server...")
         self._running = False
 
-        # Stop accepting new connections
         if self._server:
             self._server.close()
             await self._server.wait_closed()
 
-        # Cancel notification task
         if self._notification_task:
             self._notification_task.cancel()
             try:
@@ -140,7 +141,6 @@ class Server:
             except asyncio.CancelledError:
                 pass
 
-        # Close all client connections
         for writer in self._peer_writers.values():
             writer.close()
             try:

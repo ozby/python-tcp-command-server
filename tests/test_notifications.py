@@ -4,8 +4,6 @@ from collections.abc import AsyncGenerator
 import pytest
 
 from server.db.entities.notification import NotificationType
-from server.services.discussion_service import DiscussionService
-from server.services.notification_service import NotificationService
 from server.services.session_service import SessionService
 
 # Test data
@@ -25,10 +23,7 @@ async def setup() -> AsyncGenerator[None, None]:
     yield
 
 @pytest.mark.asyncio
-async def test_reply_notifications() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_reply_notifications(discussion_service, notification_service) -> None:
     # Create initial discussion by user1
     discussion_id = await discussion_service.create_discussion(
         reference="test.123", comment="Initial discussion", client_id="user1"
@@ -62,10 +57,7 @@ async def test_reply_notifications() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mention_notifications() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_mention_notifications(discussion_service, notification_service) -> None:
     # Create discussion with mentions
     await discussion_service.create_discussion(
         reference="test.123",
@@ -87,10 +79,7 @@ async def test_mention_notifications() -> None:
 
 
 @pytest.mark.asyncio
-async def test_combined_reply_and_mention_notifications() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_combined_reply_and_mention_notifications(discussion_service, notification_service) -> None:
     # User1 creates discussion mentioning user4
     discussion_id = await discussion_service.create_discussion(
         reference="test.123",
@@ -126,10 +115,7 @@ async def test_combined_reply_and_mention_notifications() -> None:
 
 
 @pytest.mark.asyncio
-async def test_self_mention_and_reply() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_self_mention_and_reply(discussion_service, notification_service) -> None:
     # User1 creates discussion mentioning themselves
     discussion_id = await discussion_service.create_discussion(
         reference="test.123",
@@ -150,10 +136,7 @@ async def test_self_mention_and_reply() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mark_notifications_as_read() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_mark_notifications_as_read(discussion_service, notification_service) -> None:
     # Create discussion with mentions and replies
     discussion_id = await discussion_service.create_discussion(
         reference="test.123", comment="Hey @user2, check this out!", client_id="user1"
@@ -185,10 +168,7 @@ async def test_mark_notifications_as_read() -> None:
 
 
 @pytest.mark.asyncio
-async def test_notification_ordering() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_notification_ordering(discussion_service, notification_service) -> None:
     # Create discussion
     discussion_id = await discussion_service.create_discussion(
         reference="test.123",
@@ -221,10 +201,7 @@ async def test_notification_ordering() -> None:
 
 
 @pytest.mark.asyncio
-async def test_invalid_mentions() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_invalid_mentions(discussion_service, notification_service) -> None:
     # Test mentions with various edge cases
     await discussion_service.create_discussion(
         reference="test.123",
@@ -246,10 +223,7 @@ async def test_invalid_mentions() -> None:
 
 
 @pytest.mark.asyncio
-async def test_duplicate_mentions() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_duplicate_mentions(discussion_service, notification_service) -> None:
     # Create discussion with duplicate mentions
     await discussion_service.create_discussion(
         reference="test.123",
@@ -263,10 +237,7 @@ async def test_duplicate_mentions() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mention_in_reply_to_own_discussion() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_mention_in_reply_to_own_discussion(discussion_service, notification_service) -> None:
     # User1 creates discussion
     discussion_id = await discussion_service.create_discussion(
         reference="test.123", comment="Initial discussion", client_id="user1"
@@ -290,10 +261,7 @@ async def test_mention_in_reply_to_own_discussion() -> None:
 
 
 @pytest.mark.asyncio
-async def test_performance_many_notifications() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_performance_many_notifications(discussion_service, notification_service) -> None:
     # Create discussion
     discussion_id = await discussion_service.create_discussion(
         reference="test.123", comment="Initial discussion", client_id="user1"
@@ -316,10 +284,7 @@ async def test_performance_many_notifications() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mark_all_as_read() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_mark_all_as_read(discussion_service, notification_service) -> None:
     # Create multiple discussions with notifications
     discussion_id1 = await discussion_service.create_discussion(
         reference="test.123",
@@ -343,10 +308,7 @@ async def test_mark_all_as_read() -> None:
 
 
 @pytest.mark.asyncio
-async def test_notification_after_mark_as_read() -> None:
-    discussion_service = DiscussionService()
-    notification_service = NotificationService()
-
+async def test_notification_after_mark_as_read(discussion_service, notification_service) -> None:
     # Create discussion
     discussion_id = await discussion_service.create_discussion(
         reference="test.123",

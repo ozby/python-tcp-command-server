@@ -1,11 +1,18 @@
-from server.commands.command import Command
+from server.commands.command import Command, CommandContext
 from server.response import Response
 from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 from server.validation import Validator
+from typing import Any, Coroutine, Optional
 
 
 class CreateDiscussionCommand(Command):
+    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+        super().__init__(context)
+        self.discussion_service = discussion_service
+        self._created_discussion_id: Optional[str] = None
+        self._delete_coroutine: Optional[Coroutine[Any, Any, None]] = None
+
     def validate_sync(self) -> None:
         if len(self.context.params) != 2:
             raise ValueError("action requires two parameters")
@@ -24,24 +31,22 @@ class CreateDiscussionCommand(Command):
         if client_id is None:
             raise ValueError("authentication is required")
 
-        discussion_service = DiscussionService()
-        self._created_discussion_id = await discussion_service.create_discussion(
+        created_id = await self.discussion_service.create_discussion(
             self.context.params[0], self.context.params[1], client_id
         )
+        self._created_discussion_id = created_id
         return Response(
-            request_id=self.context.request_id, params=[self._created_discussion_id]
+            request_id=self.context.request_id, params=[created_id]
         ).serialize()
-
-    def undo(self) -> None:
-        if hasattr(self, "_created_discussion_id"):
-            discussion_service = DiscussionService()
-            self._delete_coroutine = discussion_service.delete_discussion(self._created_discussion_id)
-
-    def can_undo(self) -> bool:
-        return True
 
 
 class CreateReplyCommand(Command):
+    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+        super().__init__(context)
+        self.discussion_service = discussion_service
+        self._discussion_id: Optional[str] = None
+        self._reply_id: Optional[str] = None
+        
     def validate_sync(self) -> None:
         if len(self.context.params) != 2:
             raise ValueError("action requires two parameters")
@@ -57,33 +62,29 @@ class CreateReplyCommand(Command):
             raise ValueError("authentication is required")
 
         discussion_id, comment = self.context.params[0], self.context.params[1]
-        discussion_service = DiscussionService()
         self._discussion_id = discussion_id
-        self._reply_id = await discussion_service.create_reply(
+        reply_id = await self.discussion_service.create_reply(
             discussion_id, comment, client_id
         )
+        self._reply_id = reply_id
         return Response(request_id=self.context.request_id).serialize()
 
-    def undo(self) -> None:
-        if hasattr(self, "_discussion_id") and hasattr(self, "_reply_id"):
-            discussion_service = DiscussionService()
-            self._delete_reply_coroutine = discussion_service.delete_reply(self._discussion_id, self._reply_id)
-
-    def can_undo(self) -> bool:
-        return True
 
 
 class GetDiscussionCommand(Command):
+    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+        super().__init__(context)
+        self.discussion_service = discussion_service
+        
     def validate_sync(self) -> None:
         if len(self.context.params) != 1:
             raise ValueError("action requires one parameter")
     
     async def _validate(self) -> None:
-        pass  # No additional async validation needed
+        pass
 
     async def execute(self) -> str:
-        discussion_service = DiscussionService()
-        discussion = await discussion_service.get_discussion(self.context.params[0])
+        discussion = await self.discussion_service.get_discussion(self.context.params[0])
         if discussion is None:
             raise ValueError("Discussion not found")
 
@@ -97,21 +98,21 @@ class GetDiscussionCommand(Command):
         ]
         return Response(request_id=self.context.request_id, params=params).serialize()
 
-    def undo(self) -> None:
-        pass  # Read-only command, no undo needed
-
 
 class ListDiscussionsCommand(Command):
+    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+        super().__init__(context)
+        self.discussion_service = discussion_service
+        
     def validate_sync(self) -> None:
         if len(self.context.params) > 1:
             raise ValueError("action can't have more than one parameter")
     
     async def _validate(self) -> None:
-        pass  # No additional async validation needed
+        pass
 
     async def execute(self) -> str:
-        discussion_service = DiscussionService()
-        discussions = await discussion_service.list_discussions()
+        discussions = await self.discussion_service.list_discussions()
 
         discussion_list = []
         for discussion in discussions:
@@ -125,6 +126,3 @@ class ListDiscussionsCommand(Command):
         return Response(
             request_id=self.context.request_id, params=discussion_list
         ).serialize_list()
-
-    def undo(self) -> None:
-        pass  # Read-only command, no undo needed
