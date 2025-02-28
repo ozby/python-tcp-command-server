@@ -38,8 +38,6 @@ class Request:
         params = parts[2:] if len(parts) >= MIN_PART else []
         logging.info(f"params: {params}")
 
-        # Create and validate the command
         CommandFactory.create_command(action, request_id, params, peer_id)
-        # Validation is done in Command.__init__
 
         return Request(request_id, action, params, peer_id)

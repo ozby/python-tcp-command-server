@@ -14,13 +14,15 @@ async def server() -> AsyncGenerator[Server, None]:
     server = Server(port=0)
     task = asyncio.create_task(server.start())
     await asyncio.sleep(0.1)
-    yield server
-    await server.stop()
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        yield server
+    finally:
+        await server.stop()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,4 @@
-from typing import ClassVar, Type, Union, cast
+from typing import ClassVar, cast
 
 from server import get_container
 from server.commands.auth_commands import (
@@ -16,7 +16,7 @@ from server.commands.discussion_commands import (
 
 
 class CommandFactory:
-    _commands: ClassVar[dict[str, Type[Command]]] = {
+    _commands: ClassVar[dict[str, type[Command]]] = {
         "SIGN_IN": SignInCommand,
         "SIGN_OUT": SignOutCommand,
         "WHOAMI": WhoAmICommand,
@@ -40,26 +40,34 @@ class CommandFactory:
             raise ValueError(f"Unknown action: {action}")
 
         context = CommandContext(request_id=request_id, params=params, peer_id=peer_id)
-        
+        container = get_container()
         command_class = cls._commands[action]
-        
-        if command_class in (CreateDiscussionCommand, CreateReplyCommand, 
-                            GetDiscussionCommand, ListDiscussionsCommand):
-            discussion_service = get_container().discussion_service()
-            
-            if command_class == CreateDiscussionCommand:
-                command = cast(Command, CreateDiscussionCommand(context, discussion_service))
-            elif command_class == CreateReplyCommand:
-                command = cast(Command, CreateReplyCommand(context, discussion_service))
-            elif command_class == GetDiscussionCommand:
-                command = cast(Command, GetDiscussionCommand(context, discussion_service))
-            elif command_class == ListDiscussionsCommand:
-                command = cast(Command, ListDiscussionsCommand(context, discussion_service))
-            else:
-                raise RuntimeError("Unexpected command class")
+        discussion_service = container.discussion_service()
+        session_service = container.session_service()
+
+        if command_class == SignInCommand:
+            command = cast(Command, SignInCommand(context, session_service))
+        elif command_class == SignOutCommand:
+            command = cast(Command, SignOutCommand(context, session_service))
+        elif command_class == WhoAmICommand:
+            command = cast(Command, WhoAmICommand(context, session_service))
+        elif command_class == CreateDiscussionCommand:
+            command = cast(
+                Command,
+                CreateDiscussionCommand(context, discussion_service, session_service),
+            )
+        elif command_class == CreateReplyCommand:
+            command = cast(
+                Command,
+                CreateReplyCommand(context, discussion_service, session_service),
+            )
+        elif command_class == GetDiscussionCommand:
+            command = cast(Command, GetDiscussionCommand(context, discussion_service))
+        elif command_class == ListDiscussionsCommand:
+            command = cast(Command, ListDiscussionsCommand(context, discussion_service))
         else:
             command = command_class(context)
-            
+
         cls._command_history.append(command)
         return command
 

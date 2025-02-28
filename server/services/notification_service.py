@@ -53,7 +53,7 @@ class NotificationService:
                 "created_at": datetime.now(),
             }
             for recipient_id in mentioned_ids
-            if recipient_id != sender_id  # Don't notify if someone mentions themselves
+            if recipient_id != sender_id
         ]
 
         if notifications:
@@ -64,9 +64,11 @@ class NotificationService:
 
     async def get_notifications(self, recipient_id: str) -> list[Notification]:
         """Get all notifications for a recipient"""
-        notification_docs = await self.notifications.find(
-            {"recipient_id": recipient_id}, {"_id": 0}
-        ).sort("created_at", -1).to_list(length=None)
+        notification_docs = (
+            await self.notifications.find({"recipient_id": recipient_id}, {"_id": 0})
+            .sort("created_at", -1)
+            .to_list(length=None)
+        )
 
         return [
             Notification(

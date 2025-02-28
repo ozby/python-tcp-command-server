@@ -14,13 +14,14 @@ class AsyncMongoClient:
             self.client = AsyncMongoMockClient()
         else:
             self.client = AsyncIOMotorClient("mongodb://localhost:27017")
-        self.db: AsyncIOMotorDatabase[dict[str, Any]] | AsyncMongoMockDatabase[dict[str, Any]] = self.client.synthesia_db
-
+        self.db: (
+            AsyncIOMotorDatabase[dict[str, Any]]
+            | AsyncMongoMockDatabase[dict[str, Any]]
+        ) = self.client.synthesia_db
 
     def close(self) -> None:
         """Close the MongoDB connection"""
         self.client.close()
 
 
-# Global instance
 async_mongo_client = AsyncMongoClient()

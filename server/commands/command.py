@@ -13,7 +13,7 @@ class Command(ABC):
     def __init__(self, context: CommandContext):
         self.context = context
         self.validate_sync()
-    
+
     @abstractmethod
     def validate_sync(self) -> None:
         """Synchronous validation that can be called from __init__

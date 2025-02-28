@@ -1,17 +1,25 @@
+from collections.abc import Coroutine
+from typing import Any
+
 from server.commands.command import Command, CommandContext
 from server.response import Response
 from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 from server.validation import Validator
-from typing import Any, Coroutine, Optional
 
 
 class CreateDiscussionCommand(Command):
-    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+    def __init__(
+        self,
+        context: CommandContext,
+        discussion_service: DiscussionService,
+        session_service: SessionService,
+    ) -> None:
         super().__init__(context)
         self.discussion_service = discussion_service
-        self._created_discussion_id: Optional[str] = None
-        self._delete_coroutine: Optional[Coroutine[Any, Any, None]] = None
+        self.session_service = session_service
+        self._created_discussion_id: str | None = None
+        self._delete_coroutine: Coroutine[Any, Any, None] | None = None
 
     def validate_sync(self) -> None:
         if len(self.context.params) != 2:
@@ -20,14 +28,14 @@ class CreateDiscussionCommand(Command):
         reference, _comment = self.context.params[0], self.context.params[1]
         if not Validator.validate_reference(reference):
             raise ValueError("reference must be period-delimited alphanumeric")
-    
+
     async def _validate(self) -> None:
-        client_id = await SessionService().get_client_id(self.context.peer_id)
+        client_id = await self.session_service.get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
     async def execute(self) -> str:
-        client_id = await SessionService().get_client_id(self.context.peer_id)
+        client_id = await self.session_service.get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
@@ -41,23 +49,29 @@ class CreateDiscussionCommand(Command):
 
 
 class CreateReplyCommand(Command):
-    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+    def __init__(
+        self,
+        context: CommandContext,
+        discussion_service: DiscussionService,
+        session_service: SessionService,
+    ) -> None:
         super().__init__(context)
         self.discussion_service = discussion_service
-        self._discussion_id: Optional[str] = None
-        self._reply_id: Optional[str] = None
-        
+        self.session_service = session_service
+        self._discussion_id: str | None = None
+        self._reply_id: str | None = None
+
     def validate_sync(self) -> None:
         if len(self.context.params) != 2:
             raise ValueError("action requires two parameters")
-            
+
     async def _validate(self) -> None:
-        client_id = await SessionService().get_client_id(self.context.peer_id)
+        client_id = await self.session_service.get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
     async def execute(self) -> str:
-        client_id = await SessionService().get_client_id(self.context.peer_id)
+        client_id = await self.session_service.get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
@@ -70,21 +84,24 @@ class CreateReplyCommand(Command):
         return Response(request_id=self.context.request_id).serialize()
 
 
-
 class GetDiscussionCommand(Command):
-    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+    def __init__(
+        self, context: CommandContext, discussion_service: DiscussionService
+    ) -> None:
         super().__init__(context)
         self.discussion_service = discussion_service
-        
+
     def validate_sync(self) -> None:
         if len(self.context.params) != 1:
             raise ValueError("action requires one parameter")
-    
+
     async def _validate(self) -> None:
         pass
 
     async def execute(self) -> str:
-        discussion = await self.discussion_service.get_discussion(self.context.params[0])
+        discussion = await self.discussion_service.get_discussion(
+            self.context.params[0]
+        )
         if discussion is None:
             raise ValueError("Discussion not found")
 
@@ -100,14 +117,16 @@ class GetDiscussionCommand(Command):
 
 
 class ListDiscussionsCommand(Command):
-    def __init__(self, context: CommandContext, discussion_service: DiscussionService) -> None:
+    def __init__(
+        self, context: CommandContext, discussion_service: DiscussionService
+    ) -> None:
         super().__init__(context)
         self.discussion_service = discussion_service
-        
+
     def validate_sync(self) -> None:
         if len(self.context.params) > 1:
             raise ValueError("action can't have more than one parameter")
-    
+
     async def _validate(self) -> None:
         pass
 

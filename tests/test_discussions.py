@@ -10,6 +10,7 @@ from server.commands.discussion_commands import (
     GetDiscussionCommand,
     ListDiscussionsCommand,
 )
+from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 from server.validation import Validator
 
@@ -22,40 +23,63 @@ async def client_id() -> AsyncGenerator[str, None]:
     await SessionService().set(TEST_PEER_ID, client_id)
     yield client_id
 
-def test_create_discussion_validates_params(discussion_service) -> None:
+
+@pytest.fixture
+def session_service() -> SessionService:
+    return SessionService()
+
+
+def test_create_discussion_validates_params(
+    discussion_service: DiscussionService, session_service: SessionService
+) -> None:
     context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     CreateDiscussionCommand(
-        context, discussion_service
+        context, discussion_service, session_service
     )  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID), discussion_service)
+        CreateDiscussionCommand(
+            CommandContext("abcdefg", [], TEST_PEER_ID),
+            discussion_service,
+            session_service,
+        )
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateDiscussionCommand(CommandContext("abcdefg", ["ref.123"], TEST_PEER_ID), discussion_service)
+        CreateDiscussionCommand(
+            CommandContext("abcdefg", ["ref.123"], TEST_PEER_ID),
+            discussion_service,
+            session_service,
+        )
 
     with pytest.raises(
         ValueError, match="reference must be period-delimited alphanumeric"
     ):
         CreateDiscussionCommand(
-            CommandContext("abcdefg", ["invalid!", "test"], TEST_PEER_ID), discussion_service
+            CommandContext("abcdefg", ["ref,123", "test comment"], TEST_PEER_ID),
+            discussion_service,
+            session_service,
         )
 
 
-async def test_create_discussion_executes(client_id: str) -> None:
+async def test_create_discussion_executes(
+    client_id: str, session_service: SessionService
+) -> None:
     discussion_id = "abcdzzz"
     with patch(
         "server.di.container.discussion_service"
     ) as mock_discussion_service_provider:
         # Create a mock for the discussion service
         mock_discussion_service = AsyncMock()
-        mock_discussion_service.create_discussion = AsyncMock(return_value=discussion_id)
+        mock_discussion_service.create_discussion = AsyncMock(
+            return_value=discussion_id
+        )
         # Make the provider return our mock
         mock_discussion_service_provider.return_value = mock_discussion_service
 
         context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
-        command = CreateDiscussionCommand(context, mock_discussion_service)
-        # The mock will be used because we're patching the container's provider
+        command = CreateDiscussionCommand(
+            context, mock_discussion_service, session_service
+        )
         result = (await command.execute()).rstrip("\n")
         parts = result.split("|")
         assert len(parts) == 2
@@ -68,10 +92,13 @@ async def test_create_discussion_executes(client_id: str) -> None:
         )
 
 
-async def test_create_reply_executes(discussion_service) -> None:
+async def test_create_reply_executes(
+    discussion_service: DiscussionService, session_service: SessionService
+) -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
@@ -79,24 +106,28 @@ async def test_create_reply_executes(discussion_service) -> None:
         CommandContext(
             "abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID
         ),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     replied = await reply.execute()
     print(f"replied: {replied}")
 
     returned_discussion = GetDiscussionCommand(
         CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
     )
     returned = await returned_discussion.execute()
     assert '"' not in returned
     print(f"returned discussion after reply: {returned}")
 
 
-async def test_create_reply_executes_with_comma(discussion_service) -> None:
+async def test_create_reply_executes_with_comma(
+    discussion_service: DiscussionService, session_service: SessionService
+) -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
@@ -104,31 +135,37 @@ async def test_create_reply_executes_with_comma(discussion_service) -> None:
         CommandContext(
             "abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID
         ),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     replied = await reply.execute()
     print(f"replied: {replied}")
 
     returned_discussion = GetDiscussionCommand(
         CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
     )
     returned = await returned_discussion.execute()
     assert '"' in returned
     print(f"returned discussion after reply: {returned}")
 
 
-async def test_get_discussion_executes(client_id: str, discussion_service) -> None:
+async def test_get_discussion_executes(
+    client_id: str,
+    discussion_service: DiscussionService,
+    session_service: SessionService,
+) -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
     print(f"created_discussion_id: {created_discussion_id}")
 
     returned_discussion = GetDiscussionCommand(
         CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
     )
     returned = await returned_discussion.execute()
     assert (
@@ -137,35 +174,54 @@ async def test_get_discussion_executes(client_id: str, discussion_service) -> No
     )
 
 
-def test_create_reply_validates_params(discussion_service) -> None:
+def test_create_reply_validates_params(
+    discussion_service: DiscussionService, session_service: SessionService
+) -> None:
     context = CommandContext("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
-    CreateReplyCommand(context, discussion_service)  # Should not raise - validation in __init__
+    CreateReplyCommand(
+        context, discussion_service, session_service
+    )  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyCommand(CommandContext("abcdefg", [], TEST_PEER_ID), discussion_service)
+        CreateReplyCommand(
+            CommandContext("abcdefg", [], TEST_PEER_ID),
+            discussion_service,
+            session_service,
+        )
 
     with pytest.raises(ValueError, match="action requires two parameters"):
-        CreateReplyCommand(CommandContext("abcdefg", ["disc123"], TEST_PEER_ID), discussion_service)
+        CreateReplyCommand(
+            CommandContext("abcdefg", ["disc123"], TEST_PEER_ID),
+            discussion_service,
+            session_service,
+        )
 
 
-def test_get_discussion_validates_params(discussion_service) -> None:
+def test_get_discussion_validates_params(discussion_service: DiscussionService) -> None:
     context = CommandContext("abcdefg", ["disc123"], TEST_PEER_ID)
-    GetDiscussionCommand(context, discussion_service)  # Should not raise - validation in __init__
+    GetDiscussionCommand(
+        context, discussion_service
+    )  # Should not raise - validation in __init__
 
     with pytest.raises(ValueError, match="action requires one parameter"):
-        GetDiscussionCommand(CommandContext("abcdefg", [], TEST_PEER_ID), discussion_service)
+        GetDiscussionCommand(
+            CommandContext("abcdefg", [], TEST_PEER_ID), discussion_service
+        )
 
     with pytest.raises(ValueError, match="action requires one parameter"):
         GetDiscussionCommand(
             CommandContext("abcdefg", ["disc123", "extra"], TEST_PEER_ID),
-            discussion_service
+            discussion_service,
         )
 
 
-async def test_list_discussion_validates_params(discussion_service) -> None:
+async def test_list_discussion_validates_params(
+    discussion_service: DiscussionService, session_service: SessionService
+) -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
@@ -175,7 +231,8 @@ async def test_list_discussion_validates_params(discussion_service) -> None:
             [created_discussion_id, "I love this video. What did you use to make it?"],
             TEST_PEER_ID,
         ),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     await reply.execute()
 
@@ -188,30 +245,36 @@ async def test_list_discussion_validates_params(discussion_service) -> None:
             ],
             TEST_PEER_ID,
         ),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     await reply.execute()
 
     created = CreateDiscussionCommand(
         CommandContext("zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
     reply = CreateReplyCommand(
         CommandContext("replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     await reply.execute()
 
     reply = CreateReplyCommand(
         CommandContext("replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID),
-        discussion_service
+        discussion_service,
+        session_service,
     )
     await reply.execute()
 
 
-async def test_list_discussion_executes(discussion_service) -> None:
-    command = ListDiscussionsCommand(CommandContext("abcdefg", [], TEST_PEER_ID), discussion_service)
+async def test_list_discussion_executes(discussion_service: DiscussionService) -> None:
+    command = ListDiscussionsCommand(
+        CommandContext("abcdefg", [], TEST_PEER_ID), discussion_service
+    )
     result = await command.execute()
     print(f"result: {result}")

@@ -1,11 +1,10 @@
 import random
 import re
 import string
-from typing import Any, Optional
+from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from server.db.async_mongo_client import async_mongo_client
 from server.db.entities.discussion import Discussion
 from server.db.entities.reply import Reply
 from server.services.notification_service import NotificationService
@@ -14,7 +13,9 @@ from server.services.notification_service import NotificationService
 class DiscussionService:
     MENTION_PATTERN = re.compile(r"(?<!@)@(\w+)(?=[\s,.!?]|$)")
 
-    def __init__(self, db: AsyncIOMotorDatabase[Any], notification_service: NotificationService) -> None:
+    def __init__(
+        self, db: AsyncIOMotorDatabase[Any], notification_service: NotificationService
+    ) -> None:
         self.db = db
         self.discussions = self.db.discussions
         self.notification_service = notification_service
@@ -27,7 +28,7 @@ class DiscussionService:
 
     def _get_unique_participants(self, discussion_doc: dict[str, Any]) -> set[str]:
         """Get unique client_ids from a discussion's replies"""
-        participants = {discussion_doc["client_id"]}  # Include discussion creator
+        participants = {discussion_doc["client_id"]}
         for reply in discussion_doc["replies"]:
             participants.add(reply["client_id"])
         return participants
@@ -36,7 +37,9 @@ class DiscussionService:
         """Extract mentioned client_ids from a comment"""
         return set(self.MENTION_PATTERN.findall(comment))
 
-    async def create_discussion(self, reference: str, comment: str, client_id: str) -> str:
+    async def create_discussion(
+        self, reference: str, comment: str, client_id: str
+    ) -> str:
         reference_prefix = reference.split(".")[0]
         discussion_id = "".join(
             random.choices(string.ascii_lowercase + string.digits, k=7)
@@ -64,7 +67,9 @@ class DiscussionService:
 
         return discussion_id
 
-    async def create_reply(self, discussion_id: str, comment: str, client_id: str) -> str:
+    async def create_reply(
+        self, discussion_id: str, comment: str, client_id: str
+    ) -> str:
         discussion_doc = await self.discussions.find_one(
             {"discussion_id": discussion_id}, {"_id": 0}
         )
@@ -109,9 +114,13 @@ class DiscussionService:
             replies=[Reply(**reply) for reply in discussion_doc["replies"]],
         )
 
-    async def list_discussions(self, reference_prefix: str | None = None) -> list[Discussion]:
+    async def list_discussions(
+        self, reference_prefix: str | None = None
+    ) -> list[Discussion]:
         query = {"reference_prefix": reference_prefix} if reference_prefix else {}
-        discussion_docs = await self.discussions.find(query, {"_id": 0}).to_list(length=None)
+        discussion_docs = await self.discussions.find(query, {"_id": 0}).to_list(
+            length=None
+        )
 
         return [
             Discussion(
