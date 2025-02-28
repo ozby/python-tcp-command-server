@@ -6,20 +6,21 @@ from server.validation import Validator
 
 
 class CreateDiscussionCommand(Command):
-    def _validate(self) -> None:
-        client_id = SessionService().get_client_id(self.context.peer_id)
-        if client_id is None:
-            raise ValueError("authentication is required")
-
+    def validate_sync(self) -> None:
         if len(self.context.params) != 2:
             raise ValueError("action requires two parameters")
 
         reference, _comment = self.context.params[0], self.context.params[1]
         if not Validator.validate_reference(reference):
             raise ValueError("reference must be period-delimited alphanumeric")
+    
+    async def _validate(self) -> None:
+        client_id = await SessionService().get_client_id(self.context.peer_id)
+        if client_id is None:
+            raise ValueError("authentication is required")
 
-    def execute(self) -> str:
-        client_id = SessionService().get_client_id(self.context.peer_id)
+    async def execute(self) -> str:
+        client_id = await SessionService().get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
@@ -41,16 +42,17 @@ class CreateDiscussionCommand(Command):
 
 
 class CreateReplyCommand(Command):
-    def _validate(self) -> None:
-        client_id = SessionService().get_client_id(self.context.peer_id)
+    def validate_sync(self) -> None:
+        if len(self.context.params) != 2:
+            raise ValueError("action requires two parameters")
+            
+    async def _validate(self) -> None:
+        client_id = await SessionService().get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
-        if len(self.context.params) != 2:
-            raise ValueError("action requires two parameters")
-
-    def execute(self) -> str:
-        client_id = SessionService().get_client_id(self.context.peer_id)
+    async def execute(self) -> str:
+        client_id = await SessionService().get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
@@ -72,11 +74,14 @@ class CreateReplyCommand(Command):
 
 
 class GetDiscussionCommand(Command):
-    def _validate(self) -> None:
+    def validate_sync(self) -> None:
         if len(self.context.params) != 1:
             raise ValueError("action requires one parameter")
+    
+    async def _validate(self) -> None:
+        pass  # No additional async validation needed
 
-    def execute(self) -> str:
+    async def execute(self) -> str:
         discussion_service = DiscussionService()
         discussion = discussion_service.get_discussion(self.context.params[0])
         if discussion is None:
@@ -97,11 +102,14 @@ class GetDiscussionCommand(Command):
 
 
 class ListDiscussionsCommand(Command):
-    def _validate(self) -> None:
+    def validate_sync(self) -> None:
         if len(self.context.params) > 1:
             raise ValueError("action can't have more than one parameter")
+    
+    async def _validate(self) -> None:
+        pass  # No additional async validation needed
 
-    def execute(self) -> str:
+    async def execute(self) -> str:
         discussion_service = DiscussionService()
         discussions = discussion_service.list_discussions()
 

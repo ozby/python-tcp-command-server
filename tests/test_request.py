@@ -1,13 +1,11 @@
 import unittest
 
 from server.request import Request
-from server.services.session_service import SessionService
 from tests.test_discussions import TEST_PEER_ID
 
 
 class TestParserInput(unittest.TestCase):
     def test_parse_actions(self) -> None:
-        SessionService().set(TEST_PEER_ID, "tester_client_1")
         # Test SIGN_IN action
         self.assertEqual(
             vars(Request.from_line("ougmcim|SIGN_IN|janedoe")),

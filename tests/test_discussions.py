@@ -1,3 +1,4 @@
+from typing import AsyncGenerator
 from unittest.mock import patch
 
 import pytest
@@ -15,11 +16,12 @@ from server.validation import Validator
 TEST_PEER_ID = "127.0.0.1:89899"
 
 
-@pytest.fixture(autouse=True)
-def setup() -> None:
-    # Setup test users
-    SessionService().set(TEST_PEER_ID, "tester_client_1")
 
+@pytest.fixture(autouse=True)
+async def client_id() -> AsyncGenerator[str, None]:
+    client_id = "tester_client_1"
+    await SessionService().set(TEST_PEER_ID, client_id)
+    yield client_id
 
 def test_create_discussion_validates_params() -> None:
     context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
@@ -41,7 +43,7 @@ def test_create_discussion_validates_params() -> None:
         )
 
 
-def test_create_discussion_executes() -> None:
+async def test_create_discussion_executes(client_id: str) -> None:
     discussion_id = "abcdzzz"
     with patch(
         "server.commands.discussion_commands.DiscussionService"
@@ -52,7 +54,7 @@ def test_create_discussion_executes() -> None:
         context = CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
         command = CreateDiscussionCommand(context)
         # The mock will automatically be used because we're patching at the module level
-        result = command.execute().rstrip("\n")
+        result = (await command.execute()).rstrip("\n")
         parts = result.split("|")
         assert len(parts) == 2
         assert parts[0] == "abcdefg"
@@ -60,68 +62,68 @@ def test_create_discussion_executes() -> None:
         assert Validator.validate_request_id(parts[1])
 
         mock_service.create_discussion.assert_called_once_with(
-            "ref.123", "test comment", SessionService().get_client_id(TEST_PEER_ID)
+            "ref.123", "test comment", client_id
         )
 
 
-def test_create_reply_executes() -> None:
+async def test_create_reply_executes() -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     )
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
     reply = CreateReplyCommand(
         CommandContext(
             "abcdefg", [created_discussion_id, "test reply yooo"], TEST_PEER_ID
         )
     )
-    replied = reply.execute()
+    replied = await reply.execute()
     print(f"replied: {replied}")
 
     returned_discussion = GetDiscussionCommand(
         CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
     )
-    returned = returned_discussion.execute()
+    returned = await returned_discussion.execute()
     assert '"' not in returned
     print(f"returned discussion after reply: {returned}")
 
 
-def test_create_reply_executes_with_comma() -> None:
+async def test_create_reply_executes_with_comma() -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     )
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
     reply = CreateReplyCommand(
         CommandContext(
             "abcdefg", [created_discussion_id, "test reply, yooo"], TEST_PEER_ID
         )
     )
-    replied = reply.execute()
+    replied = await reply.execute()
     print(f"replied: {replied}")
 
     returned_discussion = GetDiscussionCommand(
         CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
     )
-    returned = returned_discussion.execute()
+    returned = await returned_discussion.execute()
     assert '"' in returned
     print(f"returned discussion after reply: {returned}")
 
 
-def test_get_discussion_executes() -> None:
+async def test_get_discussion_executes(client_id: str) -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ref.123", "test comment"], TEST_PEER_ID)
     )
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
     print(f"created_discussion_id: {created_discussion_id}")
 
     returned_discussion = GetDiscussionCommand(
         CommandContext("abcdefg", [created_discussion_id], TEST_PEER_ID)
     )
-    returned = returned_discussion.execute()
+    returned = await returned_discussion.execute()
     assert (
         returned
-        == f"abcdefg|{created_discussion_id}|ref.123|({SessionService().get_client_id(TEST_PEER_ID)}|test comment)\n"
+        == f"abcdefg|{created_discussion_id}|ref.123|({client_id}|test comment)\n"
     )
 
 
@@ -149,11 +151,11 @@ def test_get_discussion_validates_params() -> None:
         )
 
 
-def test_list_discussion_validates_params() -> None:
+async def test_list_discussion_validates_params() -> None:
     created = CreateDiscussionCommand(
         CommandContext("abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID)
     )
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
     reply = CreateReplyCommand(
         CommandContext(
@@ -162,7 +164,7 @@ def test_list_discussion_validates_params() -> None:
             TEST_PEER_ID,
         )
     )
-    reply.execute()
+    await reply.execute()
 
     reply = CreateReplyCommand(
         CommandContext(
@@ -174,25 +176,25 @@ def test_list_discussion_validates_params() -> None:
             TEST_PEER_ID,
         )
     )
-    reply.execute()
+    await reply.execute()
 
     created = CreateDiscussionCommand(
         CommandContext("zzzzccs", ["asdasds.15s", "test comment"], TEST_PEER_ID)
     )
-    created_discussion_id = created.execute().strip("\n").split("|")[1]
+    created_discussion_id = (await created.execute()).strip("\n").split("|")[1]
 
     reply = CreateReplyCommand(
         CommandContext("replyaa", [created_discussion_id, "sadsdsadas"], TEST_PEER_ID)
     )
-    reply.execute()
+    await reply.execute()
 
     reply = CreateReplyCommand(
         CommandContext("replybb", [created_discussion_id, "pdskfdsjfds"], TEST_PEER_ID)
     )
-    reply.execute()
+    await reply.execute()
 
 
-def test_list_discussion_executes() -> None:
+async def test_list_discussion_executes() -> None:
     command = ListDiscussionsCommand(CommandContext("abcdefg", [], TEST_PEER_ID))
-    result = command.execute()
+    result = await command.execute()
     print(f"result: {result}")

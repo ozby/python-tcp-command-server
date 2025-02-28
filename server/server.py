@@ -43,7 +43,7 @@ class Server:
                         notification = change["fullDocument"]
                         logger.info("Received notification: %s", notification)
                         recipient_id = notification["recipient_id"]
-                        peer_id = SessionService().get_by_user_id(recipient_id)
+                        peer_id = await SessionService().get_by_user_id(recipient_id)
                         peer_writer = self._peer_writers.get(peer_id)
                         if peer_writer is None:
                             logger.info(f"User is offline: {peer_id}")
@@ -89,7 +89,7 @@ class Server:
                     parsed_command.params,
                     peer_id,
                 )
-                response = command.execute()
+                response = await command.execute()
                 logger.info("response: %s", response)
 
                 writer.write(response.encode())
@@ -101,7 +101,7 @@ class Server:
         finally:
             self._peer_writers.pop(peer_id, None)
             writer.close()
-            SessionService().delete(peer_id)
+            await SessionService().delete(peer_id)
             await writer.wait_closed()
             logger.info("Connection closed from %s", peer_id)
 

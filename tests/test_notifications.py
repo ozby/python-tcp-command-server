@@ -16,12 +16,12 @@ TEST_PEER_4 = "127.0.0.1:8004"
 
 
 @pytest.fixture(autouse=True)
-def setup() -> Generator[None, None, None]:
+async def setup() -> Generator[None, None, None]:
     # Setup test users
-    SessionService().set(TEST_PEER_1, "user1")
-    SessionService().set(TEST_PEER_2, "user2")
-    SessionService().set(TEST_PEER_3, "user3")
-    SessionService().set(TEST_PEER_4, "user4")
+    await SessionService().set(TEST_PEER_1, "user1")
+    await SessionService().set(TEST_PEER_2, "user2")
+    await SessionService().set(TEST_PEER_3, "user3")
+    await SessionService().set(TEST_PEER_4, "user4")
     yield
     # Cleanup after each test
     mongo_client = NotificationService().db
