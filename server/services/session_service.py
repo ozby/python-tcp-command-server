@@ -7,7 +7,7 @@ from server.services.service import singleton
 
 @singleton
 class SessionService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.db = mongo_client.db
         self.sessions = self.db.sessions
         self.sessions.create_index("peer_id", unique=True)

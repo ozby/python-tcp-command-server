@@ -1,6 +1,7 @@
 import random
 import re
 import string
+from typing import Dict, Any
 
 from server.db.entities.discussion import Discussion
 from server.db.entities.reply import Reply
@@ -13,7 +14,7 @@ from server.services.service import singleton
 class DiscussionService:
     MENTION_PATTERN = re.compile(r"(?<!@)@(\w+)(?=[\s,.!?]|$)")
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.db = mongo_client.db
         self.discussions = self.db.discussions
         self.discussions.create_index("discussion_id", unique=True)
@@ -26,7 +27,7 @@ class DiscussionService:
             return f'"{escaped_comment}"'
         return comment
 
-    def _get_unique_participants(self, discussion_doc: dict) -> set[str]:
+    def _get_unique_participants(self, discussion_doc: Dict[str, Any]) -> set[str]:
         """Get unique client_ids from a discussion's replies"""
         participants = {discussion_doc["client_id"]}  # Include discussion creator
         for reply in discussion_doc["replies"]:
@@ -101,12 +102,12 @@ class DiscussionService:
 
         return discussion_id
 
-    def get_discussion(self, discussion_id: str) -> Discussion | None:
+    def get_discussion(self, discussion_id: str) -> Discussion:
         discussion_doc = self.discussions.find_one(
             {"discussion_id": discussion_id}, {"_id": 0}
         )
         if not discussion_doc:
-            return None
+            raise ValueError(f"Discussion {discussion_id} not found")
 
         return Discussion(
             discussion_id=discussion_doc["discussion_id"],

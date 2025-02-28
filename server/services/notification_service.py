@@ -8,7 +8,7 @@ from server.services.service import singleton
 
 @singleton
 class NotificationService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.db = mongo_client.db
         self.notifications = self.db.notifications
         self.notifications.create_index([("recipient_id", 1), ("discussion_id", 1)])

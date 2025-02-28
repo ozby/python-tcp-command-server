@@ -8,8 +8,9 @@ from server.actions.discussions import (
     CreateDiscussionAction,
     CreateReplyAction,
     GetDiscussionAction,
-    ListDiscussionAction,
+    ListDiscussionsAction,
 )
+from typing import Type
 
 
 class ActionFactory:
@@ -17,14 +18,14 @@ class ActionFactory:
     def execute_action(
         action: str, request_id: str, params: list[str], peer_id: str | None = None
     ) -> Action:
-        actions = {
+        actions: dict[str, Type[Action]] = {
             "SIGN_IN": SignInAction,
             "SIGN_OUT": SignOutAction,
             "WHOAMI": WhoAmIAction,
             "CREATE_DISCUSSION": CreateDiscussionAction,
             "CREATE_REPLY": CreateReplyAction,
             "GET_DISCUSSION": GetDiscussionAction,
-            "LIST_DISCUSSIONS": ListDiscussionAction,
+            "LIST_DISCUSSIONS": ListDiscussionsAction,
         }
 
         if action in actions:

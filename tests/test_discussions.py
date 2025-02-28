@@ -6,7 +6,7 @@ from server.actions.discussions import (
     CreateDiscussionAction,
     CreateReplyAction,
     GetDiscussionAction,
-    ListDiscussionAction,
+    ListDiscussionsAction,
 )
 from server.services.session_service import SessionService
 from server.validation import Validator
@@ -15,12 +15,12 @@ TEST_PEER_ID = "127.0.0.1:89899"
 
 
 @pytest.fixture(autouse=True)
-def setup():
+def setup() -> None:
     # Setup test users
     SessionService().set(TEST_PEER_ID, "tester_client_1")
 
 
-def test_create_discussion_validates_params():
+def test_create_discussion_validates_params() -> None:
     action = CreateDiscussionAction(
         "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
     )
@@ -38,7 +38,7 @@ def test_create_discussion_validates_params():
         CreateDiscussionAction("abcdefg", ["invalid!", "test"], TEST_PEER_ID).validate()
 
 
-def test_create_discussion_executes():
+def test_create_discussion_executes() -> None:
     discussion_id = "abcdzzz"
     with patch("server.actions.discussions.DiscussionService") as mock_service_class:
         mock_service = mock_service_class.return_value
@@ -47,8 +47,7 @@ def test_create_discussion_executes():
         action = CreateDiscussionAction(
             "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
         )
-        action.discussion_service = mock_service
-
+        # The mock will automatically be used because we're patching at the module level
         result = action.execute().rstrip("\n")
         parts = result.split("|")
         assert len(parts) == 2
@@ -61,7 +60,7 @@ def test_create_discussion_executes():
         )
 
 
-def test_create_reply_executes():
+def test_create_reply_executes() -> None:
     created = CreateDiscussionAction(
         "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
     )
@@ -81,7 +80,7 @@ def test_create_reply_executes():
     print(f"returned discussion after reply: {returned}")
 
 
-def test_create_reply_executes_with_comma():
+def test_create_reply_executes_with_comma() -> None:
     created = CreateDiscussionAction(
         "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
     )
@@ -101,7 +100,7 @@ def test_create_reply_executes_with_comma():
     print(f"returned discussion after reply: {returned}")
 
 
-def test_get_discussion_executes():
+def test_get_discussion_executes() -> None:
     created = CreateDiscussionAction(
         "abcdefg", ["ref.123", "test comment"], TEST_PEER_ID
     )
@@ -118,7 +117,7 @@ def test_get_discussion_executes():
     )
 
 
-def test_create_reply_validates_params():
+def test_create_reply_validates_params() -> None:
     action = CreateReplyAction("abcdefg", ["disc123", "test reply"], TEST_PEER_ID)
     action.validate()  # Should not raise
 
@@ -129,18 +128,22 @@ def test_create_reply_validates_params():
         CreateReplyAction("abcdefg", ["disc123"], TEST_PEER_ID).validate()
 
 
-def test_get_discussion_validates_params():
-    action = GetDiscussionAction("abcdefg", ["disc123"])
+def test_get_discussion_validates_params() -> None:
+    action = GetDiscussionAction("abcdefg", ["disc123"], TEST_PEER_ID)
     action.validate()  # Should not raise
 
-    with pytest.raises(ValueError, match="action requires one parameters"):
-        GetDiscussionAction("abcdefg", []).validate()
+    with pytest.raises(ValueError, match="action requires one parameter"):
+        GetDiscussionAction("abcdefg", [], TEST_PEER_ID).validate()
 
-    with pytest.raises(ValueError, match="action requires one parameters"):
-        GetDiscussionAction("abcdefg", ["disc123", "extra"]).validate()
+    with pytest.raises(ValueError, match="action requires one parameter"):
+        GetDiscussionAction(
+            "abcdefg",
+            ["disc123", "extra"],
+            SessionService().get_client_id(TEST_PEER_ID),
+        ).validate()
 
 
-def test_list_discussion_validates_params():
+def test_list_discussion_validates_params() -> None:
     created = CreateDiscussionAction(
         "abcdefg", ["ndgdojs.15s", "test comment"], TEST_PEER_ID
     )
@@ -179,14 +182,7 @@ def test_list_discussion_validates_params():
     reply.execute()
 
 
-def test_list_discussion_executes():
-    action = ListDiscussionAction("abcdefg", [])
+def test_list_discussion_executes() -> None:
+    action = ListDiscussionsAction("abcdefg", [], TEST_PEER_ID)
     result = action.execute()
     print(f"result: {result}")
-    # create = CreateDiscussionAction("ozbydee", ["ref.123", "test comment"])
-    # assert create.execute() == 'ozbydee|dizcuid\n'
-
-    # # action = GetDiscussionAction("request", ["abcdzzz"])
-    # action = ListDiscussionAction("request")
-    # result = action.execute()
-    # assert result == "request|abcdzzz\n"

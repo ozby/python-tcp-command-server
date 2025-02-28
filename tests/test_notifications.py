@@ -1,4 +1,5 @@
 import time
+from typing import Generator
 
 import pytest
 
@@ -15,15 +16,21 @@ TEST_PEER_4 = "127.0.0.1:8004"
 
 
 @pytest.fixture(autouse=True)
-def setup():
+def setup() -> Generator[None, None, None]:
     # Setup test users
     SessionService().set(TEST_PEER_1, "user1")
     SessionService().set(TEST_PEER_2, "user2")
     SessionService().set(TEST_PEER_3, "user3")
     SessionService().set(TEST_PEER_4, "user4")
+    yield
+    # Cleanup after each test
+    mongo_client = NotificationService().db
+    mongo_client.notifications.delete_many({})
+    mongo_client.discussions.delete_many({})
+    mongo_client.sessions.delete_many({})
 
 
-def test_reply_notifications():
+def test_reply_notifications() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -59,7 +66,7 @@ def test_reply_notifications():
     assert len(user2_notifications) == 1  # Should have notification from user3
 
 
-def test_mention_notifications():
+def test_mention_notifications() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -83,7 +90,7 @@ def test_mention_notifications():
     assert user3_notifications[0].notification_type == NotificationType.MENTION
 
 
-def test_combined_reply_and_mention_notifications():
+def test_combined_reply_and_mention_notifications() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -121,7 +128,7 @@ def test_combined_reply_and_mention_notifications():
     )
 
 
-def test_self_mention_and_reply():
+def test_self_mention_and_reply() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -144,7 +151,7 @@ def test_self_mention_and_reply():
     assert len(user1_notifications) == 0  # No self-notifications
 
 
-def test_mark_notifications_as_read():
+def test_mark_notifications_as_read() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -178,7 +185,7 @@ def test_mark_notifications_as_read():
     assert len(user2_notifications) == 1  # Should remain unchanged
 
 
-def test_notification_ordering():
+def test_notification_ordering() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -213,7 +220,7 @@ def test_notification_ordering():
         assert notifications[i].created_at > notifications[i + 1].created_at
 
 
-def test_invalid_mentions():
+def test_invalid_mentions() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -237,7 +244,7 @@ def test_invalid_mentions():
     assert len(user4_notifications) == 0  # Invalid: @@user4
 
 
-def test_duplicate_mentions():
+def test_duplicate_mentions() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -253,7 +260,7 @@ def test_duplicate_mentions():
     assert len(user2_notifications) == 1
 
 
-def test_mention_in_reply_to_own_discussion():
+def test_mention_in_reply_to_own_discussion() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -279,7 +286,7 @@ def test_mention_in_reply_to_own_discussion():
     assert len(user3_notifications) == 1  # Mention notification
 
 
-def test_performance_many_notifications():
+def test_performance_many_notifications() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -304,7 +311,7 @@ def test_performance_many_notifications():
     assert len(user2_notifications) == 50  # Mention notifications
 
 
-def test_mark_all_as_read():
+def test_mark_all_as_read() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 
@@ -330,7 +337,7 @@ def test_mark_all_as_read():
     assert len(user2_notifications) == 0
 
 
-def test_notification_after_mark_as_read():
+def test_notification_after_mark_as_read() -> None:
     discussion_service = DiscussionService()
     notification_service = NotificationService()
 

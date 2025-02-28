@@ -23,9 +23,12 @@ class CreateDiscussionAction(Action):
         logging.info(f"reference: {reference}, comment: {comment}")
 
     def execute(self) -> str:
+        client_id = SessionService().get_client_id(self.peer_id)
+        if client_id is None:
+            raise ValueError("authentication is required")
         discussion_service = DiscussionService()
         discussion_id = discussion_service.create_discussion(
-            self.params[0], self.params[1], SessionService().get_client_id(self.peer_id)
+            self.params[0], self.params[1], client_id
         )
         return Response(request_id=self.request_id, params=[discussion_id]).serialize()
 
@@ -46,11 +49,12 @@ class CreateReplyAction(Action):
         #     raise ValueError("client_id must be alphanumeric")
 
     def execute(self) -> str:
+        client_id = SessionService().get_client_id(self.peer_id)
+        if client_id is None:
+            raise ValueError("authentication is required")
         discussion_id, comment = self.params[0], self.params[1]
         discussion_service = DiscussionService()
-        discussion_service.create_reply(
-            discussion_id, comment, SessionService().get_client_id(self.peer_id)
-        )
+        discussion_service.create_reply(discussion_id, comment, client_id)
         return Response(request_id=self.request_id).serialize()
 
 
@@ -68,6 +72,8 @@ class GetDiscussionAction(Action):
     def execute(self) -> str:
         discussion_service = DiscussionService()
         discussion = discussion_service.get_discussion(self.params[0])
+        if discussion is None:
+            raise ValueError("Discussion not found")
 
         replies = []
         for reply in discussion.replies:
@@ -80,7 +86,7 @@ class GetDiscussionAction(Action):
         return Response(request_id=self.request_id, params=params).serialize()
 
 
-class ListDiscussionAction(Action):
+class ListDiscussionsAction(Action):
     def validate(self) -> None:
         if len(self.params) > 1:
             raise ValueError("action can't have more than one parameter")

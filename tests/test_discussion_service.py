@@ -1,9 +1,10 @@
+import pytest
 from server.services.discussion_service import DiscussionService
 from server.services.session_service import SessionService
 from tests.test_discussions import TEST_PEER_ID
 
 
-def test_create_discussion():
+def test_create_discussion() -> None:
     service = DiscussionService()
     discussion_id = service.create_discussion(
         reference="test.123", comment="Test comment", client_id="user1"
@@ -18,7 +19,7 @@ def test_create_discussion():
     assert discussion.replies[0].comment == "Test comment"
 
 
-def test_create_reply():
+def test_create_reply() -> None:
     service = DiscussionService()
     discussion_id = service.create_discussion(
         reference="test.123", comment="Initial comment", client_id="user1"
@@ -36,7 +37,7 @@ def test_create_reply():
     assert discussion.replies[1].comment == "Reply comment"
 
 
-def test_list_discussions():
+def test_list_discussions() -> None:
     service = DiscussionService()
 
     # Create discussions with different prefixes
@@ -53,15 +54,15 @@ def test_list_discussions():
     assert len(all_discussions) == 3
 
 
-def test_get_discussion():
+def test_get_discussion() -> None:
     discussion_service = DiscussionService()
     discussion_id = discussion_service.create_discussion(
-        "ref.123", "test comment 3", SessionService().get_client_id(TEST_PEER_ID)
+        "ref.123", "test comment 3", "user1"
     )
     discussion = discussion_service.get_discussion(discussion_id)
 
     assert discussion is not None
     assert discussion.discussion_id == discussion_id
     assert discussion.reference == "ref.123"
-    assert discussion.client_id == SessionService().get_client_id(TEST_PEER_ID)
+    assert discussion.client_id == "user1"
     assert discussion.replies[0].comment == "test comment 3"
