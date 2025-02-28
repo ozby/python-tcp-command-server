@@ -37,7 +37,7 @@ class Server:
                     parsed_command.action,
                     parsed_command.request_id,
                     parsed_command.params,
-                    peer_str
+                    peer_str,
                 )
                 response_from_action = action_man.execute()
                 logger.info("response: %s", response_from_action)

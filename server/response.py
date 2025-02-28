@@ -17,7 +17,7 @@ class Response:
             parts.extend(self.params)
 
         return "|".join(parts) + "\n"
-    
+
     def serialize_list(self) -> str:
         if not Validator.validate_request_id(self.request_id):
             raise ValueError("Invalid request_id. Must be 7 lowercase letters (a-z)")

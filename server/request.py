@@ -8,7 +8,13 @@ MIN_PART = 2
 
 class Request:
 
-    def __init__(self, request_id: str, action: str, params: list[str] | None = None, peer_id: str | None = None):
+    def __init__(
+        self,
+        request_id: str,
+        action: str,
+        params: list[str] | None = None,
+        peer_id: str | None = None,
+    ):
         if params is None:
             params = []
         self.request_id = request_id

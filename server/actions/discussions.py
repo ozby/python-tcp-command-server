@@ -10,9 +10,9 @@ from server.validation import Validator
 class CreateDiscussionAction(Action):
     def validate(self) -> None:
         client_id = SessionService().get_client_id(self.peer_id)
-        if (client_id is None):
+        if client_id is None:
             raise ValueError("authentication is required")
-        
+
         logging.info(f"params: {self.params}")
         if len(self.params) != 2:
             raise ValueError("action requires two parameters")
@@ -24,16 +24,18 @@ class CreateDiscussionAction(Action):
 
     def execute(self) -> str:
         discussion_service = DiscussionService()
-        discussion_id = discussion_service.create_discussion(self.params[0], self.params[1], SessionService().get_client_id(self.peer_id))
+        discussion_id = discussion_service.create_discussion(
+            self.params[0], self.params[1], SessionService().get_client_id(self.peer_id)
+        )
         return Response(request_id=self.request_id, params=[discussion_id]).serialize()
 
 
 class CreateReplyAction(Action):
     def validate(self) -> None:
         client_id = SessionService().get_client_id(self.peer_id)
-        if (client_id is None):
+        if client_id is None:
             raise ValueError("authentication is required")
-        
+
         if len(self.params) != 2:
             raise ValueError("action requires two parameters")
 
@@ -46,7 +48,9 @@ class CreateReplyAction(Action):
     def execute(self) -> str:
         discussion_id, comment = self.params[0], self.params[1]
         discussion_service = DiscussionService()
-        discussion_service.create_reply(discussion_id, comment, SessionService().get_client_id(self.peer_id))
+        discussion_service.create_reply(
+            discussion_id, comment, SessionService().get_client_id(self.peer_id)
+        )
         return Response(request_id=self.request_id).serialize()
 
 
@@ -67,10 +71,12 @@ class GetDiscussionAction(Action):
 
         replies = []
         for reply in discussion.replies:
-            replies.append(f"{reply.author}|{reply.comment}")
+            replies.append(f"{reply.client_id}|{reply.comment}")
         params = [
-            discussion.discussion_id, discussion.reference,
-            "(" + ",".join(replies) + ")"]
+            discussion.discussion_id,
+            discussion.reference,
+            "(" + ",".join(replies) + ")",
+        ]
         return Response(request_id=self.request_id, params=params).serialize()
 
 
@@ -91,8 +97,12 @@ class ListDiscussionAction(Action):
         for discussion in discussions:
             replies = []
             for reply in discussion.replies:
-                replies.append(f"{reply.author}|{reply.comment}")
+                replies.append(f"{reply.client_id}|{reply.comment}")
 
-            discussion_list.append(f"{discussion.discussion_id}|{discussion.reference}|({','.join(replies)})")
+            discussion_list.append(
+                f"{discussion.discussion_id}|{discussion.reference}|({','.join(replies)})"
+            )
         # print(f"discussion_list: {",".join(discussion_list)}")
-        return Response(request_id=self.request_id, params=discussion_list).serialize_list()
+        return Response(
+            request_id=self.request_id, params=discussion_list
+        ).serialize_list()

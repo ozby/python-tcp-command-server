@@ -15,10 +15,7 @@ from server.actions.discussions import (
 class ActionFactory:
     @staticmethod
     def execute_action(
-        action: str,
-        request_id: str,
-        params: list[str],
-        peer_id: str | None = None
+        action: str, request_id: str, params: list[str], peer_id: str | None = None
     ) -> Action:
         actions = {
             "SIGN_IN": SignInAction,
