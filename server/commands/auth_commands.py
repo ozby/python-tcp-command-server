@@ -11,17 +11,14 @@ class SignInCommand(Command):
         super().__init__(context)
         self.session_service = session_service
 
-    def validate_sync(self) -> None:
+    async def _validate(self) -> None:
         if len(self.context.params) != 1:
             raise ValueError("SIGN_IN action requires exactly one parameter")
 
         if not Validator.validate_client_id(self.context.params[0]):
             raise ValueError("client_id must be alphanumeric")
 
-    async def _validate(self) -> None:
-        pass
-
-    async def execute(self) -> str:
+    async def _execute_impl(self) -> str:
         if self.context.peer_id is None:
             raise ValueError("peer_id is required")
 
@@ -39,13 +36,10 @@ class SignOutCommand(Command):
         self.session_service = session_service
         self._previous_user_id: str | None = None
 
-    def validate_sync(self) -> None:
-        pass
-
     async def _validate(self) -> None:
         pass
 
-    async def execute(self) -> str:
+    async def _execute_impl(self) -> str:
         self._previous_user_id = await self.session_service.get_client_id(
             self.context.peer_id
         )
@@ -60,13 +54,10 @@ class WhoAmICommand(Command):
         super().__init__(context)
         self.session_service = session_service
 
-    def validate_sync(self) -> None:
-        pass
-
     async def _validate(self) -> None:
         pass
 
-    async def execute(self) -> str:
+    async def _execute_impl(self) -> str:
         client_id = await self.session_service.get_client_id(self.context.peer_id)
         params = [client_id] if client_id is not None else None
         return Response(request_id=self.context.request_id, params=params).serialize()

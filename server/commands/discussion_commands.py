@@ -21,24 +21,21 @@ class CreateDiscussionCommand(Command):
         self._created_discussion_id: str | None = None
         self._delete_coroutine: Coroutine[Any, Any, None] | None = None
 
-    def validate_sync(self) -> None:
+    async def _validate(self) -> None:
         if len(self.context.params) != 2:
             raise ValueError("action requires two parameters")
 
         reference, _comment = self.context.params[0], self.context.params[1]
         if not Validator.validate_reference(reference):
             raise ValueError("reference must be period-delimited alphanumeric")
-
-    async def _validate(self) -> None:
+            
         client_id = await self.session_service.get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
-    async def execute(self) -> str:
+    async def _execute_impl(self) -> str:
         client_id = await self.session_service.get_client_id(self.context.peer_id)
-        if client_id is None:
-            raise ValueError("authentication is required")
-
+        assert client_id is not None, "Client ID should be available after validation"
         created_id = await self.discussion_service.create_discussion(
             self.context.params[0], self.context.params[1], client_id
         )
@@ -61,20 +58,17 @@ class CreateReplyCommand(Command):
         self._discussion_id: str | None = None
         self._reply_id: str | None = None
 
-    def validate_sync(self) -> None:
+    async def _validate(self) -> None:
         if len(self.context.params) != 2:
             raise ValueError("action requires two parameters")
-
-    async def _validate(self) -> None:
+            
         client_id = await self.session_service.get_client_id(self.context.peer_id)
         if client_id is None:
             raise ValueError("authentication is required")
 
-    async def execute(self) -> str:
+    async def _execute_impl(self) -> str:
         client_id = await self.session_service.get_client_id(self.context.peer_id)
-        if client_id is None:
-            raise ValueError("authentication is required")
-
+        assert client_id is not None, "Client ID should be available after validation"
         discussion_id, comment = self.context.params[0], self.context.params[1]
         self._discussion_id = discussion_id
         reply_id = await self.discussion_service.create_reply(
@@ -91,14 +85,11 @@ class GetDiscussionCommand(Command):
         super().__init__(context)
         self.discussion_service = discussion_service
 
-    def validate_sync(self) -> None:
+    async def _validate(self) -> None:
         if len(self.context.params) != 1:
             raise ValueError("action requires one parameter")
 
-    async def _validate(self) -> None:
-        pass
-
-    async def execute(self) -> str:
+    async def _execute_impl(self) -> str:
         discussion = await self.discussion_service.get_discussion(
             self.context.params[0]
         )
@@ -123,14 +114,11 @@ class ListDiscussionsCommand(Command):
         super().__init__(context)
         self.discussion_service = discussion_service
 
-    def validate_sync(self) -> None:
+    async def _validate(self) -> None:
         if len(self.context.params) > 1:
             raise ValueError("action can't have more than one parameter")
 
-    async def _validate(self) -> None:
-        pass
-
-    async def execute(self) -> str:
+    async def _execute_impl(self) -> str:
         discussions = await self.discussion_service.list_discussions()
 
         discussion_list = []
