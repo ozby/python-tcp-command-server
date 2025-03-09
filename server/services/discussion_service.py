@@ -1,3 +1,4 @@
+import asyncio
 import random
 import re
 import string
@@ -21,6 +22,7 @@ class DiscussionService:
         self.db = db
         self.discussions = self.db.discussions
         self.notification_service = notification_service
+        self.notification_tasks: list[asyncio.Task[None]] = []
 
     def _sanitize_comment(self, comment: str) -> str:
         if "," in comment:
@@ -90,11 +92,14 @@ class DiscussionService:
 
         await self.discussions.insert_one(discussion_doc)
 
-        await self._create_notifications(
-            discussion_id=discussion_id,
-            sender_id=client_id,
-            comment=comment,
+        notification_task = asyncio.create_task(
+            self._create_notifications(
+                discussion_id=discussion_id,
+                sender_id=client_id,
+                comment=comment,
+            )
         )
+        self.notification_tasks.append(notification_task)
 
         return discussion_id
 
@@ -118,12 +123,15 @@ class DiscussionService:
 
         participants = self._get_unique_participants(discussion_doc) - {client_id}
 
-        await self._create_notifications(
-            discussion_id=discussion_id,
-            sender_id=client_id,
-            comment=comment,
-            participant_ids=participants,
+        notification_task = asyncio.create_task(
+            self._create_notifications(
+                discussion_id=discussion_id,
+                sender_id=client_id,
+                comment=comment,
+                participant_ids=participants,
+            )
         )
+        self.notification_tasks.append(notification_task)
 
         return discussion_id
 

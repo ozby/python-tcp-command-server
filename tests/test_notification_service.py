@@ -1,4 +1,4 @@
-import time
+import asyncio
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -37,6 +37,8 @@ async def test_reply_notifications(container: Container) -> None:
     await discussion_service.create_reply(
         discussion_id=discussion_id, comment="First reply", client_id="user2"
     )
+    # Wait for notifications to be processed
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # Check notifications for user1 (should get notification from user2's reply)
     user1_notifications = await notification_service.get_notifications("user1")
@@ -49,6 +51,8 @@ async def test_reply_notifications(container: Container) -> None:
     await discussion_service.create_reply(
         discussion_id=discussion_id, comment="Second reply", client_id="user3"
     )
+
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # Check notifications for user1 and user2
     user1_notifications = await notification_service.get_notifications("user1")
@@ -70,6 +74,8 @@ async def test_mention_notifications(container: Container) -> None:
         comment="Hey @user2 and @user3, check this out!",
         client_id="user1",
     )
+
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # Check notifications for mentioned users
     user2_notifications = await notification_service.get_notifications("user2")
@@ -96,6 +102,7 @@ async def test_combined_reply_and_mention_notifications(container: Container) ->
         comment="Hey @user4, what do you think?",
         client_id="user1",
     )
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # User4 should have a mention notification
     user4_notifications = await notification_service.get_notifications("user4")
@@ -108,6 +115,7 @@ async def test_combined_reply_and_mention_notifications(container: Container) ->
         comment="@user3 might have some insights here too!",
         client_id="user2",
     )
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # User1 should have a reply notification (from user2)
     user1_notifications = await notification_service.get_notifications("user1")
@@ -132,6 +140,7 @@ async def test_self_mention_and_reply(container: Container) -> None:
         comment="I'm talking to myself @user1 here",
         client_id="user1",
     )
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # User1 shouldn't have a mention notification
     user1_notifications = await notification_service.get_notifications("user1")
@@ -143,7 +152,7 @@ async def test_self_mention_and_reply(container: Container) -> None:
         comment="Replying to myself",
         client_id="user1",
     )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # User1 still shouldn't have any notifications
     user1_notifications = await notification_service.get_notifications("user1")
     assert len(user1_notifications) == 0
@@ -163,6 +172,7 @@ async def test_mark_notifications_as_read(container: Container) -> None:
         comment="Replying and mentioning @user3",
         client_id="user2",
     )
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # Verify initial notifications
     user1_notifications = await notification_service.get_notifications("user1")
@@ -193,21 +203,25 @@ async def test_notification_ordering(container: Container) -> None:
         comment="Initial discussion mentioning @user2",
         client_id="user1",
     )
+    await asyncio.sleep(0.1)
 
     # Add replies with small time gaps
-    time.sleep(0.1)
+    await asyncio.gather(*discussion_service.notification_tasks)
     await discussion_service.create_reply(
         discussion_id=discussion_id,
         comment="First reply mentioning @user2",
         client_id="user3",
     )
+    await asyncio.sleep(0.1)
 
-    time.sleep(0.1)
+    await asyncio.gather(*discussion_service.notification_tasks)
     await discussion_service.create_reply(
         discussion_id=discussion_id,
         comment="Second reply mentioning @user2",
         client_id="user4",
     )
+
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # Get notifications for user2
     notifications = await notification_service.get_notifications("user2")
@@ -231,7 +245,7 @@ async def test_invalid_mentions(container: Container) -> None:
         """,
         client_id="user1",
     )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # Only valid mentions should create notifications
     user2_notifications = await notification_service.get_notifications("user2")
     user3_notifications = await notification_service.get_notifications("user3")
@@ -252,7 +266,7 @@ async def test_duplicate_mentions(container: Container) -> None:
         comment="Hey @user2 @user2 @user2, multiple mentions!",
         client_id="user1",
     )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # Should only create one notification despite multiple mentions
     user2_notifications = await notification_service.get_notifications("user2")
     assert len(user2_notifications) == 1
@@ -266,14 +280,14 @@ async def test_mention_in_reply_to_own_discussion(container: Container) -> None:
     discussion_id = await discussion_service.create_discussion(
         reference="test.33s", comment="Initial discussion", client_id="user1"
     )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # User1 replies to their own discussion mentioning others
     await discussion_service.create_reply(
         discussion_id=discussion_id,
         comment="Mentioning @user2 and @user3 in my own discussion",
         client_id="user1",
     )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # Check notifications
     user1_notifications = await notification_service.get_notifications("user1")
     user2_notifications = await notification_service.get_notifications("user2")
@@ -292,7 +306,7 @@ async def test_performance_many_notifications(container: Container) -> None:
     discussion_id = await discussion_service.create_discussion(
         reference="test.33s", comment="Initial discussion", client_id="user1"
     )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # Add many replies (testing bulk notification creation)
     for i in range(50):
         await discussion_service.create_reply(
@@ -300,7 +314,7 @@ async def test_performance_many_notifications(container: Container) -> None:
             comment=f"Reply {i} mentioning @user2",
             client_id="user3",
         )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # Verify notifications were created correctly
     user1_notifications = await notification_service.get_notifications("user1")
     user2_notifications = await notification_service.get_notifications("user2")
@@ -319,12 +333,14 @@ async def test_mark_all_as_read(container: Container) -> None:
         comment="First discussion mentioning @user2",
         client_id="user1",
     )
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     discussion_id2 = await discussion_service.create_discussion(
         reference="test.456",
         comment="Second discussion mentioning @user2",
         client_id="user1",
     )
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # Mark all notifications as read for user2
     await notification_service.mark_as_read("user2", discussion_id1)
@@ -345,7 +361,7 @@ async def test_notification_after_mark_as_read(container: Container) -> None:
         comment="Initial discussion mentioning @user2",
         client_id="user1",
     )
-
+    await asyncio.gather(*discussion_service.notification_tasks)
     # Mark as read
     await notification_service.mark_as_read("user2", discussion_id)
 
@@ -355,6 +371,7 @@ async def test_notification_after_mark_as_read(container: Container) -> None:
         comment="New reply mentioning @user2",
         client_id="user3",
     )
+    await asyncio.gather(*discussion_service.notification_tasks)
 
     # Verify new notifications are created after mark as read
     user2_notifications = await notification_service.get_notifications("user2")
